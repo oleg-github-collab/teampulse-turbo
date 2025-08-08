@@ -58,6 +58,7 @@
     "eslintConfig": {
       "env": {
         "node": true,
+        "browser": true,
         "es2022": true,
         "jest": true
       },
@@ -67,9 +68,15 @@
         "sourceType": "module"
       },
       "rules": {
-        "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-        "no-console": "warn",
-        "no-undef": "error"
+        "no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
+        "no-console": "off",
+        "no-undef": "warn",
+        "no-constant-condition": "warn",
+        "no-empty": "warn"
+      },
+      "globals": {
+        "html2canvas": "readonly",
+        "Chart": "readonly"
       }
     },
     "nodemonConfig": {

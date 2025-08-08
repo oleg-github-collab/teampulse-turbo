@@ -1,0 +1,185 @@
+[2025-08-08 17:47:03] ERROR: uncaughtException: The OPENAI_API_KEY environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option, like new OpenAI({ apiKey: 'My API Key' }).
+file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/node_modules/openai/index.mjs:48
+            throw new Errors.OpenAIError("The OPENAI_API_KEY environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option, like new OpenAI({ apiKey: 'My API Key' }).");
+                  ^
+
+Error: The OPENAI_API_KEY environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option, like new OpenAI({ apiKey: 'My API Key' }).
+    at new OpenAI (file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/node_modules/openai/index.mjs:48:19)
+    at file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/routes/analyze.js:16:16
+    at ModuleJobSync.runSync (node:internal/modules/esm/module_job:387:35)
+    at ModuleLoader.importSyncForRequire (node:internal/modules/esm/loader:323:47)
+    at loadESMFromCJS (node:internal/modules/cjs/loader:1371:24)
+    at Module._compile (node:internal/modules/cjs/loader:1511:5)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1572:16)
+    at Module.load (node:internal/modules/cjs/loader:1275:32)
+    at Module._load (node:internal/modules/cjs/loader:1096:12)
+    at Module.require (node:internal/modules/cjs/loader:1298:19)
+    at require (node:internal/modules/helpers:182:18)
+    at [eval]:2:16
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:118:14
+    at [eval]-wrapper:6:24
+    at runScript (node:internal/process/execution:101:62) {
+  "error": {},
+  "stack": "file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/node_modules/openai/index.mjs:48\n            throw new Errors.OpenAIError(\"The OPENAI_API_KEY environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option, like new OpenAI({ apiKey: 'My API Key' }).\");\n                  ^\n\nError: The OPENAI_API_KEY environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option, like new OpenAI({ apiKey: 'My API Key' }).\n    at new OpenAI (file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/node_modules/openai/index.mjs:48:19)\n    at file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/routes/analyze.js:16:16\n    at ModuleJobSync.runSync (node:internal/modules/esm/module_job:387:35)\n    at ModuleLoader.importSyncForRequire (node:internal/modules/esm/loader:323:47)\n    at loadESMFromCJS (node:internal/modules/cjs/loader:1371:24)\n    at Module._compile (node:internal/modules/cjs/loader:1511:5)\n    at Module._extensions..js (node:internal/modules/cjs/loader:1572:16)\n    at Module.load (node:internal/modules/cjs/loader:1275:32)\n    at Module._load (node:internal/modules/cjs/loader:1096:12)\n    at Module.require (node:internal/modules/cjs/loader:1298:19)\n    at require (node:internal/modules/helpers:182:18)\n    at [eval]:2:16\n    at runScriptInThisContext (node:internal/vm:209:10)\n    at node:internal/process/execution:118:14\n    at [eval]-wrapper:6:24\n    at runScript (node:internal/process/execution:101:62)",
+  "exception": true,
+  "date": "Fri Aug 08 2025 17:47:03 GMT+0200 (Central European Summer Time)",
+  "process": {
+    "pid": 28930,
+    "uid": 501,
+    "gid": 20,
+    "cwd": "/Users/olehkaminskyi/Desktop/TeamPulse turbo",
+    "execPath": "/Users/olehkaminskyi/.nvm/versions/node/v20.19.2/bin/node",
+    "version": "v20.19.2",
+    "argv": [
+      "/Users/olehkaminskyi/.nvm/versions/node/v20.19.2/bin/node"
+    ],
+    "memoryUsage": {
+      "rss": 64864256,
+      "heapTotal": 32624640,
+      "heapUsed": 18763656,
+      "external": 2534495,
+      "arrayBuffers": 25067
+    }
+  },
+  "os": {
+    "loadavg": [
+      3.1611328125,
+      3.58544921875,
+      3.3173828125
+    ],
+    "uptime": 242963
+  },
+  "trace": [
+    {
+      "column": 19,
+      "file": "file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/node_modules/openai/index.mjs",
+      "function": "new OpenAI",
+      "line": 48,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 16,
+      "file": "file:///Users/olehkaminskyi/Desktop/TeamPulse%20turbo/routes/analyze.js",
+      "function": null,
+      "line": 16,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 35,
+      "file": "node:internal/modules/esm/module_job",
+      "function": "ModuleJobSync.runSync",
+      "line": 387,
+      "method": "runSync",
+      "native": false
+    },
+    {
+      "column": 47,
+      "file": "node:internal/modules/esm/loader",
+      "function": "ModuleLoader.importSyncForRequire",
+      "line": 323,
+      "method": "importSyncForRequire",
+      "native": false
+    },
+    {
+      "column": 24,
+      "file": "node:internal/modules/cjs/loader",
+      "function": "loadESMFromCJS",
+      "line": 1371,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 5,
+      "file": "node:internal/modules/cjs/loader",
+      "function": "Module._compile",
+      "line": 1511,
+      "method": "_compile",
+      "native": false
+    },
+    {
+      "column": 16,
+      "file": "node:internal/modules/cjs/loader",
+      "function": "Module._extensions..js",
+      "line": 1572,
+      "method": ".js",
+      "native": false
+    },
+    {
+      "column": 32,
+      "file": "node:internal/modules/cjs/loader",
+      "function": "Module.load",
+      "line": 1275,
+      "method": "load",
+      "native": false
+    },
+    {
+      "column": 12,
+      "file": "node:internal/modules/cjs/loader",
+      "function": "Module._load",
+      "line": 1096,
+      "method": "_load",
+      "native": false
+    },
+    {
+      "column": 19,
+      "file": "node:internal/modules/cjs/loader",
+      "function": "Module.require",
+      "line": 1298,
+      "method": "require",
+      "native": false
+    },
+    {
+      "column": 18,
+      "file": "node:internal/modules/helpers",
+      "function": "require",
+      "line": 182,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 16,
+      "file": "[eval]",
+      "function": null,
+      "line": 2,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 10,
+      "file": "node:internal/vm",
+      "function": "runScriptInThisContext",
+      "line": 209,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 14,
+      "file": "node:internal/process/execution",
+      "function": null,
+      "line": 118,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 24,
+      "file": "[eval]-wrapper",
+      "function": null,
+      "line": 6,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 62,
+      "file": "node:internal/process/execution",
+      "function": "runScript",
+      "line": 101,
+      "method": null,
+      "native": false
+    }
+  ],
+  "version": "1.1.0",
+  "environment": "development"
+}

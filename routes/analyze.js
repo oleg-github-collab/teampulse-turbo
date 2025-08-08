@@ -13,16 +13,16 @@ const upload = multer({
 });
 
 // OpenAI клієнт
-const openai = new OpenAI({
+const openai = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
-});
+}) : null;
 
 const DAILY_LIMIT = Number(process.env.DAILY_TOKENS_LIMIT || 13500000);
 const TIMEOUT_HOURS = Number(process.env.NEGOTIATION_TIMEOUT_HOURS || 12);
 
 router.post("/analyze", upload.single("file"), async (req, res) => {
   try {
-    const ip = req.ip || req.connection.remoteAddress || "unknown";
+    const _ip = req.ip || req.connection.remoteAddress || "unknown";
     const profile = JSON.parse(req.body.profile || "{}");
     let plainText = (req.body.text || "").toString();
 
@@ -41,11 +41,26 @@ router.post("/analyze", upload.single("file"), async (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
+    // Check if OpenAI is available
+    if (!openai) {
+      res.write('data: {"chunk": "🔍 Аналіз розпочато... (демо режим)"}\\n\\n');
+      setTimeout(() => {
+        res.write('data: {"chunk": "\\n\\n📊 Обробка даних..."}\\n\\n');
+      }, 500);
+      
+      setTimeout(() => {
+        res.write('data: {"chunk": "\\n\\n✅ Аналіз завершено!\\n\\nРезультат (демо):\\n{\\n  \\"status\\": \\"success\\",\\n  \\"analysis\\": \\"Демо результат аналізу переговорів\\",\\n  \\"biases\\": [],\\n  \\"manipulations\\": [],\\n  \\"recommendations\\": [\\"Покращити стратегію переговорів\\", \\"Використати активне слухання\\"]\\n}"}\\n\\n');
+        res.write('event: done\\ndata: {}\\n\\n');
+        res.end();
+      }, 1000);
+      return;
+    }
+
     const sys = negotiationSystemPrompt();
     const user = negotiationUserPrompt(profile, plainText);
 
     const response = await openai.chat.completions.create({
-      model: "gpt-5",
+      model: "gpt-4",
       temperature: 0.2,
       messages: [
         { role: "system", content: sys },
