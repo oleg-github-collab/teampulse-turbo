@@ -3,555 +3,249 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TeamPulse Turbo — Login</title>
+  <title>TeamPulse Turbo — Вхід</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <style>
-    :root {
-      --neon-blue: #00d4ff;
-      --neon-purple: #a855f7;
-      --neon-pink: #ff0080;
-      --neon-green: #00ff88;
-      --bg: #0a0a0a;
-      --card: rgba(255, 255, 255, 0.06);
-      --border: rgba(255, 255, 255, 0.15);
-      --text: #ffffff;
-      --muted: rgba(255, 255, 255, 0.7);
-      --accent: var(--neon-purple);
-      --danger: var(--neon-pink);
-      --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      --gradient-primary: linear-gradient(135deg, var(--neon-blue), var(--neon-purple));
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      margin: 0;
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      color: var(--text);
-      background: 
-        radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.15) 0%, transparent 50%),
-        radial-gradient(circle at 40% 40%, rgba(255, 0, 128, 0.1) 0%, transparent 50%),
-        var(--bg);
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       min-height: 100vh;
-      overflow: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-
-    /* Animated background particles */
-    .bg-particles {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 1;
-    }
-
-    .particle {
-      position: absolute;
-      width: 2px;
-      height: 2px;
-      background: var(--neon-blue);
-      border-radius: 50%;
-      animation: float 6s ease-in-out infinite;
-      opacity: 0.6;
-    }
-
-    .particle:nth-child(2) { 
-      background: var(--neon-purple); 
-      animation-delay: -2s;
-      animation-duration: 8s;
-    }
-    .particle:nth-child(3) { 
-      background: var(--neon-pink); 
-      animation-delay: -4s;
-      animation-duration: 7s;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0.6; }
-      50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
-    }
-
-    .wrap {
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      position: relative;
-      z-index: 2;
-    }
-
-    .login-container {
-      width: min(440px, 95vw);
-      animation: slideInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-
-    @keyframes slideInUp {
-      from {
-        transform: translateY(60px);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-
-    .card {
-      border: 1px solid var(--border);
-      background: var(--card);
-      backdrop-filter: blur(20px);
-      border-radius: 20px;
-      padding: 32px;
-      box-shadow: 
-        var(--glass-shadow),
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        0 0 40px rgba(168, 85, 247, 0.1);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--neon-blue), var(--neon-purple), transparent);
-      animation: shimmer 3s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-      0%, 100% { opacity: 0.5; }
-      50% { opacity: 1; }
-    }
-
-    .logo-section {
-      text-align: center;
-      margin-bottom: 28px;
-    }
-
-    .logo {
-      font-size: 32px;
-      font-weight: 800;
-      background: var(--gradient-primary);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 14px;
-      font-weight: 400;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-      position: relative;
-    }
-
-    .input-wrapper {
-      position: relative;
-      overflow: hidden;
-      border-radius: 14px;
-    }
-
-    .input-field {
-      width: 100%;
-      padding: 16px 20px;
-      border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.04);
-      color: var(--text);
-      font-size: 15px;
-      border-radius: 14px;
-      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      outline: none;
-      font-family: inherit;
-    }
-
-    .input-field:focus {
-      border-color: var(--accent);
-      background: rgba(255, 255, 255, 0.08);
-      box-shadow: 
-        0 0 0 4px rgba(168, 85, 247, 0.1),
-        0 0 20px rgba(168, 85, 247, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .input-field::placeholder {
-      color: var(--muted);
-      font-weight: 400;
-    }
-
-    .login-btn {
-      width: 100%;
-      padding: 16px 24px;
-      border: none;
-      border-radius: 14px;
-      background: var(--gradient-primary);
-      color: white;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      position: relative;
-      overflow: hidden;
-      font-family: inherit;
-      box-shadow: 0 4px 20px rgba(168, 85, 247, 0.3);
-    }
-
-    .login-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(168, 85, 247, 0.4);
-    }
-
-    .login-btn:active {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
-    }
-
-    .login-btn.loading {
-      pointer-events: none;
-      opacity: 0.8;
-    }
-
-    .btn-text {
-      transition: opacity 0.2s ease;
-    }
-
-    .btn-text.hidden {
-      opacity: 0;
-    }
-
-    .spinner {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 20px;
-      height: 20px;
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      border-top: 2px solid white;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-
-    .spinner.visible {
-      opacity: 1;
-    }
-
-    @keyframes spin {
-      0% { transform: translate(-50%, -50%) rotate(0deg); }
-      100% { transform: translate(-50%, -50%) rotate(360deg); }
-    }
-
-    .error-message {
-      color: var(--danger);
-      font-size: 13px;
-      margin-top: 12px;
-      text-align: center;
-      opacity: 0;
-      transform: translateY(-10px);
-      transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-      min-height: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      padding: 20px;
     }
-
-    .error-message.show {
-      opacity: 1;
+    
+    .login-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 400px;
+      animation: slideUp 0.6s ease-out;
+    }
+    
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .brand {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .brand h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .brand .subtitle {
+      color: #666;
+      font-size: 14px;
+      font-weight: 400;
+    }
+    
+    .badge {
+      background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+      color: white;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e1e8ed;
+      border-radius: 12px;
+      font-size: 16px;
+      transition: all 0.3s ease;
+      background: #fff;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(45deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn:active {
       transform: translateY(0);
     }
-
+    
+    .error {
+      background: #ffebee;
+      border: 1px solid #ffcdd2;
+      color: #c62828;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      display: none;
+    }
+    
+    .error.show {
+      display: block;
+    }
+    
     .demo-info {
-      margin-top: 24px;
+      background: #e3f2fd;
+      border: 1px solid #bbdefb;
+      color: #1565c0;
       padding: 16px;
-      background: rgba(0, 255, 136, 0.1);
-      border: 1px dashed rgba(0, 255, 136, 0.3);
       border-radius: 12px;
-      font-size: 12px;
-      color: var(--muted);
-      animation: pulse 2s ease-in-out infinite;
+      margin-top: 20px;
+      font-size: 13px;
+      text-align: center;
     }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 0.8; }
-      50% { opacity: 1; }
+    
+    .demo-info strong {
+      display: block;
+      margin-bottom: 4px;
     }
-
-    .demo-info code {
-      background: rgba(0, 255, 136, 0.2);
-      padding: 2px 6px;
-      border-radius: 4px;
-      color: var(--neon-green);
-      font-weight: 600;
+    
+    .loading {
+      display: none;
+      text-align: center;
+      color: #666;
+      margin-top: 10px;
     }
-
-    /* Mobile optimizations */
-    @media (max-width: 480px) {
-      body {
-        background: 
-          radial-gradient(circle at 50% 20%, rgba(168, 85, 247, 0.2) 0%, transparent 50%),
-          var(--bg);
-      }
-
-      .wrap {
-        padding: 16px;
-      }
-
-      .card {
-        padding: 24px 20px;
-        border-radius: 16px;
-      }
-
-      .logo {
-        font-size: 28px;
-      }
-
-      .input-field {
-        padding: 14px 16px;
-        font-size: 16px; /* Prevents zoom on iOS */
-      }
-
-      .login-btn {
-        padding: 14px 20px;
-      }
-
-      .demo-info {
-        margin-top: 20px;
-        padding: 12px;
-      }
+    
+    .loading i {
+      animation: spin 1s linear infinite;
     }
-
-    @media (max-width: 320px) {
-      .card {
-        padding: 20px 16px;
-      }
-    }
-
-    /* Accessibility improvements */
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-      }
-    }
-
-    @media (prefers-color-scheme: light) {
-      /* Future light theme support */
-    }
-
-    /* Focus improvements for keyboard navigation */
-    .input-field:focus-visible,
-    .login-btn:focus-visible {
-      outline: 2px solid var(--neon-blue);
-      outline-offset: 2px;
+    
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
   </style>
 </head>
 <body>
-  <div class="bg-particles">
-    <div class="particle" style="top: 20%; left: 10%; animation-delay: 0s;"></div>
-    <div class="particle" style="top: 60%; left: 20%; animation-delay: -1s;"></div>
-    <div class="particle" style="top: 30%; left: 80%; animation-delay: -2s;"></div>
-    <div class="particle" style="top: 80%; left: 70%; animation-delay: -3s;"></div>
-    <div class="particle" style="top: 10%; left: 60%; animation-delay: -4s;"></div>
-    <div class="particle" style="top: 70%; left: 90%; animation-delay: -5s;"></div>
-  </div>
-
-  <div class="wrap">
-    <div class="login-container">
-      <div class="card">
-        <div class="logo-section">
-          <div class="logo">TeamPulse Turbo</div>
-          <div class="subtitle">AI-Powered Team Analysis Platform</div>
-        </div>
-
-        <form id="loginForm">
-          <div class="form-group">
-            <div class="input-wrapper">
-              <input 
-                type="text" 
-                id="username" 
-                class="input-field"
-                placeholder="Логін"
-                autocomplete="username"
-                required
-                aria-describedby="error-message"
-              >
-            </div>
-          </div>
-
-          <div class="form-group">
-            <div class="input-wrapper">
-              <input 
-                type="password" 
-                id="password" 
-                class="input-field"
-                placeholder="Пароль"
-                autocomplete="current-password"
-                required
-                aria-describedby="error-message"
-              >
-            </div>
-          </div>
-
-          <button type="submit" class="login-btn" id="loginBtn">
-            <span class="btn-text">Увійти в систему</span>
-            <div class="spinner"></div>
-          </button>
-
-          <div class="error-message" id="error-message" role="alert" aria-live="polite"></div>
-        </form>
-
-        <div class="demo-info">
-          <div style="margin-bottom: 6px;">🚀 <strong>Demo доступ:</strong></div>
-          <div><strong>Логін:</strong> <code>demo</code></div>
-          <div><strong>Пароль:</strong> <code>teampulse2024</code></div>
-        </div>
+  <div class="login-container">
+    <div class="brand">
+      <h1>⚡ TeamPulse Turbo</h1>
+      <p class="subtitle">на <span class="badge">Kaminskyi AI</span></p>
+    </div>
+    
+    <div class="error" id="error-message">
+      <i class="fas fa-exclamation-triangle"></i>
+      Невірний логін або пароль
+    </div>
+    
+    <form method="post" action="/login" id="login-form">
+      <div class="form-group">
+        <label for="username">
+          <i class="fas fa-user"></i> Користувач
+        </label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          placeholder="Введіть логін"
+          required
+          autocomplete="username"
+        >
       </div>
+      
+      <div class="form-group">
+        <label for="password">
+          <i class="fas fa-lock"></i> Пароль
+        </label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          placeholder="Введіть пароль"
+          required
+          autocomplete="current-password"
+        >
+      </div>
+      
+      <button type="submit" class="btn">
+        <i class="fas fa-sign-in-alt"></i> Увійти
+      </button>
+      
+      <div class="loading" id="loading">
+        <i class="fas fa-spinner"></i> Вхід в систему...
+      </div>
+    </form>
+    
+    <div class="demo-info">
+      <strong>Демо доступ:</strong>
+      Логін: <code>admin</code><br>
+      Пароль: <code>password123</code>
     </div>
   </div>
 
   <script>
-    const form = document.getElementById('loginForm');
-    const loginBtn = document.getElementById('loginBtn');
-    const btnText = document.querySelector('.btn-text');
-    const spinner = document.querySelector('.spinner');
-    const errorMessage = document.getElementById('error-message');
-    const usernameInput = document.getElementById('username');
-    const passwordInput = document.getElementById('password');
-
-    // Auto-focus first input
-    setTimeout(() => usernameInput.focus(), 500);
-
+    // Show error if URL contains error parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('error') === '1') {
+      document.getElementById('error-message').classList.add('show');
+    }
+    
     // Handle form submission
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value;
-
-      if (!username || !password) {
-        showError('Будь ласка, заповніть всі поля');
-        return;
-      }
-
-      setLoading(true);
-      clearError();
-
-      try {
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ password }), // Only password needed based on backend
-          credentials: 'same-origin'
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-          // Success animation
-          loginBtn.style.background = 'linear-gradient(135deg, #00ff88, #00d4ff)';
-          btnText.textContent = 'Успіх! Перенаправляємо...';
-          
-          setTimeout(() => {
-            window.location.href = '/';
-          }, 500);
-        } else {
-          showError(data.error || 'Помилка входу в систему');
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        showError('Помилка з\'єднання. Спробуйте ще раз.');
-      } finally {
-        setTimeout(() => setLoading(false), 1000);
-      }
+    document.getElementById('login-form').addEventListener('submit', function() {
+      document.getElementById('loading').style.display = 'block';
     });
-
-    // Enter key navigation
-    usernameInput.addEventListener('keydown', (e) => {
+    
+    // Auto-focus username field
+    document.getElementById('username').focus();
+    
+    // Enter key support
+    document.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        passwordInput.focus();
+        const form = document.getElementById('login-form');
+        if (document.activeElement.tagName === 'INPUT') {
+          form.submit();
+        }
       }
     });
-
-    function setLoading(loading) {
-      if (loading) {
-        loginBtn.classList.add('loading');
-        btnText.classList.add('hidden');
-        spinner.classList.add('visible');
-      } else {
-        loginBtn.classList.remove('loading');
-        btnText.classList.remove('hidden');
-        spinner.classList.remove('visible');
-        loginBtn.style.background = '';
-        btnText.textContent = 'Увійти в систему';
-      }
-    }
-
-    function showError(message) {
-      errorMessage.textContent = message;
-      errorMessage.classList.add('show');
-      
-      // Add shake animation to card
-      const card = document.querySelector('.card');
-      card.style.animation = 'shake 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      setTimeout(() => card.style.animation = '', 500);
-    }
-
-    function clearError() {
-      errorMessage.classList.remove('show');
-      setTimeout(() => errorMessage.textContent = '', 300);
-    }
-
-    // Shake animation
-    const style = document.createElement('style');
-    style.textContent = `
-      @keyframes shake {
-        0%, 100% { transform: translateX(0); }
-        25% { transform: translateX(-5px); }
-        75% { transform: translateX(5px); }
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Clear error when user starts typing
-    [usernameInput, passwordInput].forEach(input => {
-      input.addEventListener('input', clearError);
-    });
-
-    // Animate particles
-    function animateParticles() {
-      const particles = document.querySelectorAll('.particle');
-      particles.forEach(particle => {
-        const randomX = Math.random() * 100;
-        const randomY = Math.random() * 100;
-        
-        setTimeout(() => {
-          particle.style.left = randomX + '%';
-          particle.style.top = randomY + '%';
-        }, Math.random() * 2000);
-      });
-    }
-
-    setInterval(animateParticles, 3000);
   </script>
 </body>
 </html>
