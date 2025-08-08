@@ -1,10 +1,14 @@
-const { body, validationResult } = require('express-validator');
-const logger = require('../utils/logger');
+import { body, validationResult } from 'express-validator';
+import logger from '../utils/logger.js';
 
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    logger.warn('Помилка валідації', { errors: errors.array(), path: req.path });
+    logger.warn('Помилка валідації', { 
+      errors: errors.array(), 
+      path: req.path,
+      ip: req.ip
+    });
     return res.status(400).json({
       error: 'Помилка валідації даних',
       details: errors.array()
@@ -35,7 +39,7 @@ const validateSalaryAnalysis = [
   handleValidationErrors
 ];
 
-// Нова валідація для ручної картки працівника
+// Валідація для ручної картки працівника
 const validateEmployeeForm = [
   body('name')
     .isString()
@@ -96,7 +100,7 @@ const validateEmployeeForm = [
   handleValidationErrors
 ];
 
-module.exports = {
+export {
   validateAnalysis,
   validateSalaryAnalysis,
   validateEmployeeForm

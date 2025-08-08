@@ -1,6 +1,6 @@
-const logger = require('../utils/logger');
+import logger from '../utils/logger.js';
 
-module.exports = function authMiddleware(req, res, next) {
+export default function authMiddleware(req, res, next) {
   try {
     const isLoggedIn = req.cookies.loggedIn === "true";
     
@@ -27,7 +27,12 @@ module.exports = function authMiddleware(req, res, next) {
     
     next();
   } catch (error) {
-    logger.error('Помилка в middleware авторизації', { error: error.message, path: req.path });
+    logger.error('Помилка в middleware авторизації', { 
+      error: error.message, 
+      path: req.path,
+      ip: req.ip,
+      userAgent: req.get('User-Agent')
+    });
     res.status(500).json({ error: 'Помилка сервера' });
   }
-};
+}

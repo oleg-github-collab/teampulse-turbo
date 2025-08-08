@@ -1,18 +1,130 @@
-const buckets = new Map();
-function now(){ return Date.now(); }
-export function estimateTokensFromChars(charCount){ return Math.ceil(charCount / 4); }
-export function getBucket(ip){
-  if (!buckets.has(ip)) buckets.set(ip, { negotiation:{used:0,resetAt:0}, salary:{used:0,resetAt:0} });
-  return buckets.get(ip);
+import logger from './logger.js';
+
+// In-memory storage для rate limiting (в production краще Redis)
+const rateLimitStore = new Map();
+
+/**
+ * Оцінює кількість токенів на базі символів
+ * @param {number} charCount - кількість символів
+ * @returns {number} - приблизна кількість токенів
+ */
+export function estimateTokensFromChars(charCount) {
+  // Українські тексти: ~4 символи на токен
+  return Math.ceil(charCount / 4);
 }
-export function checkAndConsume(ip, kind, toConsume, dailyLimit, timeoutHours){
-  const b = getBucket(ip)[kind];
-  const nowMs = now();
-  if (nowMs > b.resetAt){ b.used = 0; b.resetAt = nowMs + timeoutHours*3600*1000; }
-  if (b.used + toConsume > dailyLimit){
-    const waitMins = Math.ceil((b.resetAt - nowMs)/60000);
-    return { ok:false, error:`Ліміт вичерпано. Спробуйте через ~${waitMins} хв.` };
+
+/**
+ * Перевіряє та споживає токени для rate limiting
+ * @param {string} identifier - унікальний ідентифікатор (IP)
+ * @param {string} service - назва сервісу ('negotiation', 'salary')
+ * @param {number} tokensNeeded - потрібна кількість токенів
+ * @param {number} dailyLimit - денний ліміт токенів
+ * @param {number} timeoutHours - таймаут в годинах
+ * @returns {Object} - результат перевірки
+ */
+export function checkAndConsume(identifier, service, tokensNeeded, dailyLimit, timeoutHours) {
+  const key = `${identifier}:${service}`;
+  const now = Date.now();
+  const timeoutMs = timeoutHours * 60 * 60 * 1000;
+  
+  let userStats = rateLimitStore.get(key);
+  
+  // Ініціалізація або скидання після таймауту
+  if (!userStats || (now - userStats.lastReset) > timeoutMs) {
+    userStats = {
+      tokensUsed: 0,
+      requestCount: 0,
+      lastReset: now,
+      lastRequest: now
+    };
   }
-  b.used += toConsume;
-  return { ok:true, remaining: dailyLimit - b.used, resetAt: b.resetAt };
+  
+  // Перевірка ліміту
+  if (userStats.tokensUsed + tokensNeeded > dailyLimit) {
+    const hoursLeft = Math.ceil((timeoutMs - (now - userStats.lastReset)) / (60 * 60 * 1000));
+    
+    logger.warn('Rate limit exceeded', {
+      identifier,
+      service,
+      tokensUsed: userStats.tokensUsed,
+      tokensNeeded,
+      dailyLimit,
+      hoursLeft
+    });
+    
+    return {
+      ok: false,
+      error: `Перевищено денний ліміт. Спробуйте через ${hoursLeft} год.`
+    };
+  }
+  
+  // Споживання токенів
+  userStats.tokensUsed += tokensNeeded;
+  userStats.requestCount += 1;
+  userStats.lastRequest = now;
+  
+  rateLimitStore.set(key, userStats);
+  
+  logger.info('Tokens consumed', {
+    identifier,
+    service,
+    tokensNeeded,
+    totalUsed: userStats.tokensUsed,
+    dailyLimit,
+    remaining: dailyLimit - userStats.tokensUsed
+  });
+  
+  return {
+    ok: true,
+    tokensRemaining: dailyLimit - userStats.tokensUsed,
+    requestCount: userStats.requestCount
+  };
 }
+
+/**
+ * Отримує статистику використання для користувача
+ * @param {string} identifier - унікальний ідентифікатор
+ * @param {string} service - назва сервісу
+ * @returns {Object} - статистика використання
+ */
+export function getUsageStats(identifier, service) {
+  const key = `${identifier}:${service}`;
+  const userStats = rateLimitStore.get(key);
+  
+  if (!userStats) {
+    return {
+      tokensUsed: 0,
+      requestCount: 0,
+      lastRequest: null
+    };
+  }
+  
+  return {
+    tokensUsed: userStats.tokensUsed,
+    requestCount: userStats.requestCount,
+    lastRequest: new Date(userStats.lastRequest)
+  };
+}
+
+/**
+ * Очищає застарілі записи (рекомендується викликати періодично)
+ */
+export function cleanupExpiredEntries() {
+  const now = Date.now();
+  const maxAge = 25 * 60 * 60 * 1000; // 25 годин
+  let cleaned = 0;
+  
+  for (const [key, stats] of rateLimitStore.entries()) {
+    if (now - stats.lastReset > maxAge) {
+      rateLimitStore.delete(key);
+      cleaned++;
+    }
+  }
+  
+  if (cleaned > 0) {
+    logger.info('Rate limit cleanup completed', { entriesRemoved: cleaned });
+  }
+}
+
+// Автоматичне очищення кожні 6 годин
+setInterval(cleanupExpiredEntries, 6 * 60 * 60 * 1000);

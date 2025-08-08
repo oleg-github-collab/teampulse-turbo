@@ -1,16 +1,20 @@
 {
     "name": "teampulse-turbo",
     "version": "1.1.0",
+    "type": "module",
     "private": true,
     "engines": {
       "node": ">=18.17.0"
     },
     "scripts": {
-      "start": "node server.js",
-      "dev": "NODE_ENV=development nodemon server.js",
-      "test": "jest",
-      "lint": "eslint .",
-      "lint:fix": "eslint . --fix"
+      "start": "node --experimental-json-modules server.js",
+      "dev": "NODE_ENV=development nodemon --experimental-json-modules server.js",
+      "test": "NODE_OPTIONS='--experimental-json-modules --experimental-vm-modules' jest",
+      "lint": "eslint . --ext .js",
+      "lint:fix": "eslint . --ext .js --fix",
+      "build": "echo 'Build completed'",
+      "docker:build": "docker build -t teampulse-turbo .",
+      "docker:run": "docker run -p 3000:3000 --env-file .env teampulse-turbo"
     },
     "dependencies": {
       "compression": "^1.7.4",
@@ -33,20 +37,66 @@
       "nodemon": "^3.0.2",
       "eslint": "^8.56.0",
       "jest": "^29.7.0",
-      "supertest": "^6.3.4"
+      "supertest": "^6.3.4",
+      "@babel/core": "^7.23.0",
+      "@babel/preset-env": "^7.23.0"
+    },
+    "jest": {
+      "preset": "@babel/preset-env",
+      "extensionsToTreatAsEsm": [".js"],
+      "globals": {
+        "NODE_ENV": "test"
+      },
+      "transform": {},
+      "testEnvironment": "node",
+      "moduleFileExtensions": ["js", "json"],
+      "testMatch": ["**/__tests__/**/*.js", "**/?(*.)+(spec|test).js"]
+    },
+    "eslintConfig": {
+      "env": {
+        "node": true,
+        "es2022": true,
+        "jest": true
+      },
+      "extends": ["eslint:recommended"],
+      "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module"
+      },
+      "rules": {
+        "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+        "no-console": "warn"
+      }
+    },
+    "nodemonConfig": {
+      "ext": "js,json",
+      "ignore": ["node_modules/", "dist/"],
+      "watch": ["./"],
+      "env": {
+        "NODE_ENV": "development"
+      }
     },
     "keywords": [
       "team-management",
       "ai-analysis",
       "collaboration",
       "express",
-      "nodejs"
+      "nodejs",
+      "gpt-5",
+      "esm"
     ],
-    "author": "Your Name",
-    "description": "AI-powered team analysis and collaboration tool",
+    "author": "Kaminskyi AI Team",
+    "description": "AI-powered team analysis and collaboration tool with GPT-5 integration",
     "repository": {
       "type": "git",
       "url": "your-repo-url"
     },
-    "license": "MIT"
+    "license": "MIT",
+    "main": "server.js",
+    "exports": {
+      ".": "./server.js",
+      "./utils/*": "./utils/*",
+      "./routes/*": "./routes/*",
+      "./middleware/*": "./middleware/*"
+    }
   }

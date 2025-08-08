@@ -1,12 +1,13 @@
-const logger = require('../utils/logger');
+import logger from '../utils/logger.js';
 
-module.exports = function errorHandler(err, req, res, next) {
+export default function errorHandler(err, req, res, next) {
   logger.error('Необроблена помилка', {
     error: err.message,
     stack: err.stack,
     path: req.path,
     method: req.method,
-    ip: req.ip
+    ip: req.ip,
+    userAgent: req.get('User-Agent')
   });
 
   // Помилки валідації
@@ -24,9 +25,19 @@ module.exports = function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'Невалідний JSON' });
   }
 
+  // GPT-5 специфічні помилки
+  if (err.message?.includes('Kaminskyi AI')) {
+    return res.status(503).json({ error: 'AI сервіс тимчасово недоступний' });
+  }
+
+  // Rate limiting помилки
+  if (err.status === 429) {
+    return res.status(429).json({ error: 'Забагато запитів. Спробуйте пізніше.' });
+  }
+
   // За замовчуванням
   res.status(500).json({ 
     error: 'Внутрішня помилка сервера',
     ...(process.env.NODE_ENV !== 'production' && { details: err.message })
   });
-};
+}
