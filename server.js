@@ -60,8 +60,8 @@ app.use(session({
 
 // Simple auth without sessions (configurable via env vars)
 const VALID_CREDENTIALS = {
-  username: process.env.DEMO_USERNAME || 'admin',
-  password: process.env.DEMO_PASSWORD || 'password123'
+  username: process.env.DEMO_USERNAME || 'janeDVDops',
+  password: process.env.DEMO_PASSWORD || 'jane2210'
 };
 
 // Authentication middleware for protected routes
@@ -78,7 +78,15 @@ app.post('/login', (req, res) => {
     // Store authentication in session
     req.session.authenticated = true;
     req.session.username = username;
-    res.redirect('/');
+    
+    // Save session before redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.redirect('/login.html?error=1');
+      }
+      res.redirect('/');
+    });
   } else {
     res.redirect('/login.html?error=1');
   }
@@ -275,7 +283,6 @@ if (missingVars.length > 0) {
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 TeamPulse Turbo server running on port ${PORT}`);
-  console.log(`📝 Demo login: ${VALID_CREDENTIALS.username} / ${VALID_CREDENTIALS.password}`);
   console.log(`🌐 Health check: http://0.0.0.0:${PORT}/health`);
   console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
