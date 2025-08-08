@@ -1,68 +1,91 @@
-// Salary Analysis Functions
-let currentAnalysisType = 'form';
+// ===== Salary Analysis Module =====
+let currentAnalysisType = 'text';
+let gaugeChart, ineffChart;
 
+// Switch analysis type
 function switchAnalysisType(type) {
-  // Оновити кнопки
-  document.querySelectorAll('.analysis-type-selector .btn').forEach(btn => {
+  // Update buttons
+  document.querySelectorAll('.type-tab').forEach(btn => {
     btn.classList.remove('active');
   });
-  document.getElementById(`${type}-analysis-btn`).classList.add('active');
+  document.getElementById(`${type}-analysis-btn`)?.classList.add('active');
 
-  // Показати відповідну секцію
+  // Show corresponding section
   document.querySelectorAll('.analysis-section').forEach(section => {
     section.style.display = 'none';
   });
-  document.getElementById(`${type}-analysis`).style.display = 'block';
+  const targetSection = document.getElementById(`${type}-analysis`);
+  if (targetSection) {
+    targetSection.style.display = 'block';
+  }
 
-  // Сховати результати при зміні типу
-  document.getElementById('salary-result').style.display = 'none';
-  document.getElementById('json-results').style.display = 'none';
+  // Hide results when switching
+  const salaryResult = document.getElementById('salary-result');
+  const jsonResults = document.getElementById('json-results');
+  if (salaryResult) salaryResult.style.display = 'none';
+  if (jsonResults) jsonResults.style.display = 'none';
 
   currentAnalysisType = type;
+  
+  // Save preference
+  localStorage.setItem('salary_analysis_type', type);
 }
 
+// Load saved preference
+window.addEventListener('DOMContentLoaded', () => {
+  const savedType = localStorage.getItem('salary_analysis_type') || 'text';
+  if (savedType !== currentAnalysisType) {
+    switchAnalysisType(savedType);
+  }
+});
+
+// Update performance value display
 function updatePerformanceValue(value) {
-  document.getElementById('performance-value').textContent = value;
-  
-  // Додати візуальну індикацію якості
   const valueElement = document.getElementById('performance-value');
-  valueElement.className = 'performance-value';
+  if (!valueElement) return;
+  
+  valueElement.textContent = value;
+  valueElement.className = 'slider-value';
   
   if (value <= 3) {
-    valueElement.classList.add('low-performance');
+    valueElement.style.background = 'rgba(255, 0, 128, 0.2)';
+    valueElement.style.color = 'var(--neon-pink)';
   } else if (value <= 6) {
-    valueElement.classList.add('medium-performance');
+    valueElement.style.background = 'rgba(255, 234, 0, 0.2)';
+    valueElement.style.color = 'var(--neon-yellow)';
   } else {
-    valueElement.classList.add('high-performance');
+    valueElement.style.background = 'rgba(0, 255, 136, 0.2)';
+    valueElement.style.color = 'var(--neon-green)';
   }
 }
 
+// Analyze employee
 async function analyzeEmployee() {
   const employeeData = {
-    name: document.getElementById('emp-name').value.trim(),
-    position: document.getElementById('emp-position').value.trim(),
-    salary: parseInt(document.getElementById('emp-salary').value),
-    experience: parseFloat(document.getElementById('emp-experience').value) || null,
-    skills: document.getElementById('emp-skills').value.trim() || null,
-    education: document.getElementById('emp-education').value.trim() || null,
-    department: document.getElementById('emp-department').value || null,
-    performance: parseInt(document.getElementById('emp-performance').value),
-    location: document.getElementById('emp-location').value || null
+    name: document.getElementById('emp-name')?.value.trim(),
+    position: document.getElementById('emp-position')?.value.trim(),
+    salary: parseInt(document.getElementById('emp-salary')?.value),
+    experience: parseFloat(document.getElementById('emp-experience')?.value) || null,
+    skills: document.getElementById('emp-skills')?.value.trim() || null,
+    education: document.getElementById('emp-education')?.value.trim() || null,
+    department: document.getElementById('emp-department')?.value || null,
+    performance: parseInt(document.getElementById('emp-performance')?.value),
+    location: document.getElementById('emp-location')?.value || null
   };
 
-  // Валідація
+  // Validation
   if (!employeeData.name || !employeeData.position || !employeeData.salary) {
-    showError('Будь ласка, заповніть обов\'язкові поля (ім\'я, посада, зарплата)');
+    showSalaryError('Заповніть обов\'язкові поля (ім\'я, посада, зарплата)');
     return;
   }
 
   if (employeeData.salary < 1000 || employeeData.salary > 1000000) {
-    showError('Зарплата повинна бути в діапазоні від 1000 до 1000000 грн');
+    showSalaryError('Зарплата має бути від 1000 до 1000000 грн');
     return;
   }
 
   try {
-    showLoading('Аналізую профіль працівника...');
+    showSalaryLoading('Аналізую профіль працівника...');
     
     const response = await fetch('/api/salary-employee', {
       method: 'POST',
@@ -74,27 +97,29 @@ async function analyzeEmployee() {
 
     if (response.ok && data.success) {
       displayEmployeeAnalysis(data.analysis, data.employee);
+      showSalarySuccess('Аналіз працівника завершено');
     } else {
-      showError(data.error || 'Помилка аналізу працівника');
+      showSalaryError(data.error || 'Помилка аналізу працівника');
     }
   } catch (error) {
     console.error('Employee analysis error:', error);
-    showError('Помилка з\'єднання при аналізі працівника');
+    showSalaryError('Помилка з\'єднання при аналізі працівника');
   } finally {
-    hideLoading();
+    hideSalaryLoading();
   }
 }
 
+// Analyze salary text
 async function analyzeSalaryText() {
-  const textData = document.getElementById('salary-text').value.trim();
+  const textData = document.getElementById('salary-text')?.value.trim();
   
   if (!textData || textData.length < 20) {
-    showError('Будь ласка, введіть детальний опис команди (мінімум 20 символів)');
+    showSalaryError('Введіть детальний опис команди (мінімум 20 символів)');
     return;
   }
 
   try {
-    showLoading('Аналізую опис команди...');
+    showSalaryLoading('Аналізую опис команди...');
     
     const response = await fetch('/api/salary-text', {
       method: 'POST',
@@ -106,167 +131,300 @@ async function analyzeSalaryText() {
 
     if (response.ok && data.success) {
       displayTextAnalysis(data.analysis);
+      showSalarySuccess('Аналіз команди завершено');
     } else {
-      showError(data.error || 'Помилка аналізу текста');
+      showSalaryError(data.error || 'Помилка аналізу тексту');
     }
   } catch (error) {
     console.error('Text analysis error:', error);
-    showError('Помилка з\'єднання при аналізі тексту');
+    showSalaryError('Помилка з\'єднання при аналізі тексту');
   } finally {
-    hideLoading();
+    hideSalaryLoading();
   }
 }
 
+// Analyze JSON
+document.getElementById('salaryBtn')?.addEventListener('click', async () => {
+  const jsonInput = document.getElementById('salaryJson')?.value;
+  const payload = safeParseJSON(jsonInput);
+  
+  if (!payload) {
+    showSalaryError('Невалідний JSON формат');
+    return;
+  }
+  
+  try {
+    showSalaryLoading('Аналізую JSON структуру...');
+    
+    const res = await fetch('/api/salary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json().catch(() => ({ error: 'bad response' }));
+    
+    if (!data.ok) {
+      showSalaryError(data.error || 'Помилка аналізу');
+      return;
+    }
+    
+    // Display raw output
+    const salaryOut = document.getElementById('salaryOut');
+    if (salaryOut) {
+      salaryOut.textContent = data.raw;
+    }
+    
+    // Show results section
+    const jsonResults = document.getElementById('json-results');
+    if (jsonResults) {
+      jsonResults.style.display = 'grid';
+    }
+    
+    // Try to parse and visualize
+    try {
+      const parsed = JSON.parse(data.raw);
+      const team = parsed.team_summary || {};
+      const gaugeVal = team.total_inefficiency_percent || 0;
+      drawGauge(gaugeVal);
+      
+      const per = parsed.per_employee || [];
+      drawIneffChart(
+        per.map(p => p.name),
+        per.map(p => p.inefficiency_percent || 0)
+      );
+      
+      showSalarySuccess('JSON аналіз завершено');
+    } catch (e) {
+      console.error('Chart parse error:', e);
+    }
+  } catch (error) {
+    console.error('JSON analysis error:', error);
+    showSalaryError('Помилка при аналізі JSON');
+  } finally {
+    hideSalaryLoading();
+  }
+});
+
+// Display employee analysis results
 function displayEmployeeAnalysis(analysis, employee) {
   const resultDiv = document.getElementById('salary-analysis-content');
   const resultContainer = document.getElementById('salary-result');
   
+  if (!resultDiv || !resultContainer) return;
+  
   const html = `
-    <div class="employee-analysis-result">
-      <div class="employee-header">
-        <h4>👤 ${employee.name}</h4>
-        <div class="employee-details">
-          <span class="badge">${employee.position}</span>
-          <span class="badge">${employee.salary.toLocaleString()} грн/міс</span>
-        </div>
-      </div>
-
-      <div class="analysis-grid">
-        <div class="metric-card">
-          <div class="metric-title">Справедливість зарплати</div>
-          <div class="metric-score">${analysis.employee_analysis.salary_fairness}/10</div>
-          <div class="metric-status">${analysis.employee_analysis.market_position}</div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-title">Співвідношення результат/зарплата</div>
-          <div class="metric-score">${analysis.employee_analysis.performance_ratio}/10</div>
-          <div class="metric-status">${analysis.employee_analysis.growth_potential} потенціал</div>
-        </div>
-
-        <div class="metric-card">
-          <div class="metric-title">Ризик втрати</div>
-          <div class="metric-score">${analysis.risk_assessment.flight_probability}/10</div>
-          <div class="metric-status">${analysis.risk_assessment.retention_risk} ризик</div>
-        </div>
-      </div>
-
-      <div class="market-data-section">
-        <h5>📈 Ринкові дані</h5>
-        <div class="salary-range">
-          <div class="range-item">
-            <span>Мінімум на ринку:</span>
-            <strong>${analysis.market_data.position_range_min?.toLocaleString()} грн</strong>
-          </div>
-          <div class="range-item">
-            <span>Медіана ринку:</span>
-            <strong>${analysis.market_data.market_median?.toLocaleString()} грн</strong>
-          </div>
-          <div class="range-item">
-            <span>Максимум на ринку:</span>
-            <strong>${analysis.market_data.position_range_max?.toLocaleString()} грн</strong>
+    <div class="employee-result-card">
+      <div class="result-header-section">
+        <div class="employee-info">
+          <h4><i class="fas fa-user-circle"></i> ${employee.name}</h4>
+          <div class="employee-badges">
+            <span class="info-badge">${employee.position}</span>
+            <span class="info-badge salary">${employee.salary.toLocaleString('uk-UA')} грн/міс</span>
           </div>
         </div>
       </div>
 
-      <div class="recommendations-section">
-        <h5>💡 Рекомендації</h5>
-        <div class="recommendation-item">
-          <strong>Зарплата:</strong>
-          <p>${analysis.recommendations.salary_adjustment}</p>
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon"><i class="fas fa-balance-scale"></i></div>
+          <div class="metric-content">
+            <div class="metric-label">Справедливість зарплати</div>
+            <div class="metric-value">${analysis.employee_analysis?.salary_fairness || 'N/A'}/10</div>
+            <div class="metric-status">${analysis.employee_analysis?.market_position || 'Невідомо'}</div>
+          </div>
         </div>
-        <div class="recommendation-item">
-          <strong>Кар'єрний розвиток:</strong>
-          <p>${analysis.recommendations.career_development}</p>
+
+        <div class="metric-card">
+          <div class="metric-icon"><i class="fas fa-chart-line"></i></div>
+          <div class="metric-content">
+            <div class="metric-label">Результат/Зарплата</div>
+            <div class="metric-value">${analysis.employee_analysis?.performance_ratio || 'N/A'}/10</div>
+            <div class="metric-status">${analysis.employee_analysis?.growth_potential || 'Невідомо'} потенціал</div>
+          </div>
         </div>
-        <div class="recommendation-item">
-          <strong>Навички:</strong>
-          <p>${analysis.recommendations.skills_improvement}</p>
+
+        <div class="metric-card">
+          <div class="metric-icon"><i class="fas fa-exclamation-triangle"></i></div>
+          <div class="metric-content">
+            <div class="metric-label">Ризик втрати</div>
+            <div class="metric-value">${analysis.risk_assessment?.flight_probability || 'N/A'}/10</div>
+            <div class="metric-status">${analysis.risk_assessment?.retention_risk || 'Невідомо'} ризик</div>
+          </div>
         </div>
       </div>
 
-      <div class="action-plan-section">
-        <h5>🎯 План дій</h5>
-        <ul class="action-list">
-          ${analysis.action_plan.map(action => `<li>${action}</li>`).join('')}
-        </ul>
+      <div class="analysis-section-card">
+        <h5><i class="fas fa-chart-area"></i> Ринкові дані</h5>
+        <div class="market-range">
+          <div class="range-bar">
+            <div class="range-labels">
+              <span>Мінімум</span>
+              <span>Медіана</span>
+              <span>Максимум</span>
+            </div>
+            <div class="range-values">
+              <span>${(analysis.market_data?.position_range_min || 0).toLocaleString('uk-UA')} грн</span>
+              <span>${(analysis.market_data?.market_median || 0).toLocaleString('uk-UA')} грн</span>
+              <span>${(analysis.market_data?.position_range_max || 0).toLocaleString('uk-UA')} грн</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysis-section-card">
+        <h5><i class="fas fa-lightbulb"></i> Рекомендації</h5>
+        <div class="recommendations-grid">
+          <div class="recommendation-card">
+            <div class="rec-icon"><i class="fas fa-coins"></i></div>
+            <div class="rec-content">
+              <strong>Зарплата</strong>
+              <p>${analysis.recommendations?.salary_adjustment || 'Немає рекомендацій'}</p>
+            </div>
+          </div>
+          <div class="recommendation-card">
+            <div class="rec-icon"><i class="fas fa-rocket"></i></div>
+            <div class="rec-content">
+              <strong>Кар\'єра</strong>
+              <p>${analysis.recommendations?.career_development || 'Немає рекомендацій'}</p>
+            </div>
+          </div>
+          <div class="recommendation-card">
+            <div class="rec-icon"><i class="fas fa-graduation-cap"></i></div>
+            <div class="rec-content">
+              <strong>Навички</strong>
+              <p>${analysis.recommendations?.skills_improvement || 'Немає рекомендацій'}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analysis-section-card">
+        <h5><i class="fas fa-tasks"></i> План дій</h5>
+        <div class="action-timeline">
+          ${(analysis.action_plan || []).map((action, index) => `
+            <div class="action-item">
+              <div class="action-number">${index + 1}</div>
+              <div class="action-content">${action}</div>
+            </div>
+          `).join('')}
+        </div>
       </div>
     </div>
   `;
   
   resultDiv.innerHTML = html;
   resultContainer.style.display = 'block';
-  resultContainer.scrollIntoView({ behavior: 'smooth' });
+  
+  // Smooth scroll to results
+  setTimeout(() => {
+    resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
+// Display text analysis results
 function displayTextAnalysis(analysis) {
   const resultDiv = document.getElementById('salary-analysis-content');
   const resultContainer = document.getElementById('salary-result');
   
+  if (!resultDiv || !resultContainer) return;
+  
   const html = `
-    <div class="team-analysis-result">
-      <div class="team-header">
-        <h4>🏢 Аналіз команди</h4>
-        <div class="overall-score">
-          <div class="score-circle">
-            <div class="score-value">${analysis.overall_efficiency}/10</div>
-            <div class="score-label">Ефективність</div>
+    <div class="team-result-card">
+      <div class="team-header-section">
+        <div class="team-info">
+          <h4><i class="fas fa-users"></i> Аналіз команди</h4>
+          <div class="efficiency-meter">
+            <div class="efficiency-circle">
+              <svg viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="5"/>
+                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gradient)" stroke-width="5"
+                        stroke-dasharray="${(analysis.overall_efficiency || 0) * 28.27} 282.7"
+                        transform="rotate(-90 50 50)"/>
+                <defs>
+                  <linearGradient id="gradient">
+                    <stop offset="0%" stop-color="var(--neon-blue)"/>
+                    <stop offset="100%" stop-color="var(--neon-purple)"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div class="efficiency-value">
+                <span class="value">${analysis.overall_efficiency || 0}</span>
+                <span class="label">з 10</span>
+              </div>
+            </div>
+            <div class="efficiency-label">Загальна ефективність</div>
           </div>
         </div>
       </div>
 
-      <div class="analysis-overview">
-        <div class="overview-item">
-          <div class="overview-label">Відповідність ринку</div>
-          <div class="overview-value ${analysis.market_alignment}">${analysis.market_alignment}</div>
-        </div>
-        <div class="overview-item">
-          <div class="overview-label">Економічна ефективність</div>
-          <div class="overview-value">${analysis.cost_effectiveness}/10</div>
-        </div>
-      </div>
-
-      <div class="strengths-section">
-        <h5>✅ Сильні сторони</h5>
-        <ul class="strengths-list">
-          ${analysis.strengths.map(strength => `<li>${strength}</li>`).join('')}
-        </ul>
-      </div>
-
-      <div class="concerns-section">
-        <h5>⚠️ Проблемні зони</h5>
-        <ul class="concerns-list">
-          ${analysis.concerns.map(concern => `<li>${concern}</li>`).join('')}
-        </ul>
-      </div>
-
-      <div class="recommendations-section">
-        <h5>💡 Рекомендації</h5>
-        <ul class="recommendations-list">
-          ${analysis.recommendations.map(rec => `<li>${rec}</li>`).join('')}
-        </ul>
-      </div>
-
-      <div class="budget-section">
-        <h5>💰 Оптимізація бюджету</h5>
-        <p>${analysis.budget_optimization}</p>
-      </div>
-
-      ${analysis.salary_ranges.recommended_min > 0 ? `
-      <div class="salary-ranges-section">
-        <h5>📊 Рекомендовані діапазони зарплат</h5>
-        <div class="ranges-grid">
-          <div class="range-card">
-            <div class="range-label">Мінімум</div>
-            <div class="range-value">${analysis.salary_ranges.recommended_min.toLocaleString()} грн</div>
+      <div class="overview-cards">
+        <div class="overview-card">
+          <i class="fas fa-chart-bar"></i>
+          <div class="overview-content">
+            <div class="overview-label">Відповідність ринку</div>
+            <div class="overview-value ${analysis.market_alignment}">${analysis.market_alignment || 'Невідомо'}</div>
           </div>
-          <div class="range-card">
-            <div class="range-label">Поточний середній</div>
-            <div class="range-value">${analysis.salary_ranges.current_average.toLocaleString()} грн</div>
+        </div>
+        <div class="overview-card">
+          <i class="fas fa-dollar-sign"></i>
+          <div class="overview-content">
+            <div class="overview-label">Економічна ефективність</div>
+            <div class="overview-value">${analysis.cost_effectiveness || 0}/10</div>
           </div>
-          <div class="range-card">
-            <div class="range-label">Максимум</div>
-            <div class="range-value">${analysis.salary_ranges.recommended_max.toLocaleString()} грн</div>
+        </div>
+      </div>
+
+      <div class="analysis-grid">
+        <div class="analysis-section-card success">
+          <h5><i class="fas fa-check-circle"></i> Сильні сторони</h5>
+          <ul class="styled-list">
+            ${(analysis.strengths || []).map(strength => `<li>${strength}</li>`).join('')}
+          </ul>
+        </div>
+
+        <div class="analysis-section-card warning">
+          <h5><i class="fas fa-exclamation-circle"></i> Проблемні зони</h5>
+          <ul class="styled-list">
+            ${(analysis.concerns || []).map(concern => `<li>${concern}</li>`).join('')}
+          </ul>
+        </div>
+      </div>
+
+      <div class="analysis-section-card">
+        <h5><i class="fas fa-lightbulb"></i> Рекомендації</h5>
+        <div class="recommendations-list">
+          ${(analysis.recommendations || []).map(rec => `
+            <div class="rec-item">
+              <i class="fas fa-arrow-right"></i>
+              <span>${rec}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="analysis-section-card">
+        <h5><i class="fas fa-piggy-bank"></i> Оптимізація бюджету</h5>
+        <div class="budget-content">
+          <p>${analysis.budget_optimization || 'Немає рекомендацій щодо оптимізації'}</p>
+        </div>
+      </div>
+
+      ${analysis.salary_ranges?.recommended_min > 0 ? `
+      <div class="analysis-section-card">
+        <h5><i class="fas fa-ruler-horizontal"></i> Рекомендовані діапазони зарплат</h5>
+        <div class="salary-ranges">
+          <div class="range-item">
+            <span class="range-label">Мінімум</span>
+            <span class="range-value">${analysis.salary_ranges.recommended_min.toLocaleString('uk-UA')} грн</span>
+          </div>
+          <div class="range-item current">
+            <span class="range-label">Поточний середній</span>
+            <span class="range-value">${analysis.salary_ranges.current_average.toLocaleString('uk-UA')} грн</span>
+          </div>
+          <div class="range-item">
+            <span class="range-label">Максимум</span>
+            <span class="range-value">${analysis.salary_ranges.recommended_max.toLocaleString('uk-UA')} грн</span>
           </div>
         </div>
       </div>
@@ -276,83 +434,193 @@ function displayTextAnalysis(analysis) {
   
   resultDiv.innerHTML = html;
   resultContainer.style.display = 'block';
-  resultContainer.scrollIntoView({ behavior: 'smooth' });
+  
+  // Add custom styles for results
+  addResultStyles();
+  
+  // Smooth scroll to results
+  setTimeout(() => {
+    resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
 }
 
+// Clear results
 function clearSalaryResult() {
-  document.getElementById('salary-result').style.display = 'none';
-  document.getElementById('json-results').style.display = 'none';
-  document.getElementById('salary-analysis-content').innerHTML = '';
+  const salaryResult = document.getElementById('salary-result');
+  const jsonResults = document.getElementById('json-results');
+  const salaryContent = document.getElementById('salary-analysis-content');
+  
+  if (salaryResult) salaryResult.style.display = 'none';
+  if (jsonResults) jsonResults.style.display = 'none';
+  if (salaryContent) salaryContent.innerHTML = '';
+  
+  showSalarySuccess('Результати очищено');
 }
 
+// Export analysis
 function exportSalaryAnalysis() {
   const content = document.getElementById('salary-analysis-content');
-  if (!content.innerHTML) {
-    showError('Немає даних для експорту');
+  if (!content?.innerHTML) {
+    showSalaryError('Немає даних для експорту');
     return;
   }
 
-  // Створити PDF за допомогою html2canvas (спрощена версія)
-  html2canvas(content, {
-    backgroundColor: '#0a0a0a',
-    scale: 2
-  }).then(canvas => {
+  // Create screenshot using html2canvas
+  if (typeof html2canvas !== 'undefined') {
+    html2canvas(content, {
+      backgroundColor: '#0a0a0a',
+      scale: 2,
+      useCORS: true,
+      logging: false
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `salary-analysis-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+      showSalarySuccess('Аналіз експортовано');
+    }).catch(error => {
+      console.error('Export error:', error);
+      showSalaryError('Помилка експорту');
+    });
+  } else {
+    // Fallback to text export
+    const textContent = content.innerText;
+    const blob = new Blob([textContent], { type: 'text/plain' });
     const link = document.createElement('a');
-    link.download = `salary-analysis-${new Date().toISOString().split('T')[0]}.png`;
-    link.href = canvas.toDataURL();
+    link.download = `salary-analysis-${new Date().toISOString().split('T')[0]}.txt`;
+    link.href = URL.createObjectURL(blob);
     link.click();
-  }).catch(error => {
-    console.error('Export error:', error);
-    showError('Помилка експорту. Спробуйте ще раз.');
+    showSalarySuccess('Аналіз експортовано як текст');
+  }
+}
+
+// Chart functions
+function drawGauge(val) {
+  const ctx = document.getElementById('gauge')?.getContext('2d');
+  if (!ctx) return;
+  
+  if (gaugeChart) gaugeChart.destroy();
+  
+  gaugeChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Неефективність', 'Ефективність'],
+      datasets: [{
+        data: [val, Math.max(0, 100 - val)],
+        backgroundColor: [
+          'rgba(255, 0, 128, 0.8)',
+          'rgba(0, 255, 136, 0.8)'
+        ],
+        borderColor: [
+          'rgba(255, 0, 128, 1)',
+          'rgba(0, 255, 136, 1)'
+        ],
+        borderWidth: 2
+      }]
+    },
+    options: {
+      rotation: -90 * Math.PI / 180,
+      circumference: 180 * Math.PI / 180,
+      cutout: '70%',
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              return context.label + ': ' + context.parsed + '%';
+            }
+          }
+        }
+      }
+    }
   });
 }
 
-// Utility functions with improved UI feedback
-function showError(message) {
-  console.error('Salary Analysis Error:', message);
+function drawIneffChart(labels, data) {
+  const ctx = document.getElementById('ineffChart')?.getContext('2d');
+  if (!ctx) return;
   
-  // Create or show error notification
-  let errorEl = document.getElementById('salary-error-notification');
-  if (!errorEl) {
-    errorEl = document.createElement('div');
-    errorEl.id = 'salary-error-notification';
-    errorEl.className = 'error-notification';
-    document.body.appendChild(errorEl);
-  }
+  if (ineffChart) ineffChart.destroy();
   
-  errorEl.innerHTML = `
-    <div class="error-content">
-      <i class="fas fa-exclamation-triangle"></i>
-      <span>${message}</span>
-      <button class="error-close" onclick="hideError()">×</button>
-    </div>
-  `;
-  errorEl.style.display = 'block';
-  
-  // Auto-hide after 10 seconds
-  setTimeout(hideError, 10000);
+  ineffChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Неефективність %',
+        data,
+        backgroundColor: 'rgba(168, 85, 247, 0.8)',
+        borderColor: 'rgba(168, 85, 247, 1)',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          display: true,
+          labels: {
+            color: 'rgba(255, 255, 255, 0.8)'
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.8)'
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          }
+        },
+        x: {
+          ticks: {
+            color: 'rgba(255, 255, 255, 0.8)'
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          }
+        }
+      }
+    }
+  });
 }
 
-function hideError() {
-  const errorEl = document.getElementById('salary-error-notification');
-  if (errorEl) {
-    errorEl.style.display = 'none';
+// Utility functions
+function safeParseJSON(s) {
+  try {
+    return JSON.parse(s);
+  } catch {
+    return null;
   }
 }
 
-function showLoading(message) {
-  console.log('Loading:', message);
-  
-  // Create or show loading overlay
-  let loadingEl = document.getElementById('salary-loading-overlay');
-  if (!loadingEl) {
-    loadingEl = document.createElement('div');
-    loadingEl.id = 'salary-loading-overlay';
-    loadingEl.className = 'loading-overlay';
-    document.body.appendChild(loadingEl);
+function showSalaryError(message) {
+  showNotification(message, 'error');
+}
+
+function showSalarySuccess(message) {
+  showNotification(message, 'success');
+}
+
+function showSalaryLoading(message) {
+  // Create loading overlay
+  let overlay = document.getElementById('salary-loading');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'salary-loading';
+    overlay.className = 'loading-overlay';
+    document.body.appendChild(overlay);
   }
   
-  loadingEl.innerHTML = `
+  overlay.innerHTML = `
     <div class="loading-content">
       <div class="loading-spinner">
         <i class="fas fa-spinner fa-spin"></i>
@@ -360,422 +628,501 @@ function showLoading(message) {
       <div class="loading-text">${message}</div>
     </div>
   `;
-  loadingEl.style.display = 'flex';
-}
-
-function hideLoading() {
-  console.log('Loading complete');
-  const loadingEl = document.getElementById('salary-loading-overlay');
-  if (loadingEl) {
-    loadingEl.style.display = 'none';
-  }
-}
-
-// Стилі для результату аналізу
-const salaryAnalysisStyles = `
-<style>
-.analysis-type-selector {
-  margin-bottom: 24px;
-}
-
-.analysis-type-selector .btn-group {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.analysis-type-selector .btn-group .btn {
-  flex: 1;
-  min-width: 150px;
-}
-
-.employee-form .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.performance-slider {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.performance-slider input[type="range"] {
-  flex: 1;
-  margin: 0;
-}
-
-.performance-value {
-  min-width: 30px;
-  text-align: center;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: all var(--transition-base);
-}
-
-.performance-value.low-performance {
-  background: rgba(255, 0, 128, 0.2);
-  color: var(--neon-pink);
-}
-
-.performance-value.medium-performance {
-  background: rgba(255, 234, 0, 0.2);
-  color: var(--neon-yellow);
-}
-
-.performance-value.high-performance {
-  background: rgba(0, 255, 136, 0.2);
-  color: var(--neon-green);
-}
-
-.result-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.result-actions {
-  display: flex;
-  gap: 8px;
-}
-
-/* Employee Analysis Styles */
-.employee-analysis-result {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-.employee-header {
-  background: var(--gradient-primary);
-  color: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-  text-align: center;
-}
-
-.employee-details {
-  display: flex;
-  gap: 12px;
-  justify-content: center;
-  margin-top: 12px;
-  flex-wrap: wrap;
-}
-
-.analysis-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.metric-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  transition: all var(--transition-base);
-}
-
-.metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);
-}
-
-.metric-title {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.metric-score {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--neon-purple);
-  margin-bottom: 4px;
-}
-
-.metric-status {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.market-data-section,
-.recommendations-section,
-.action-plan-section,
-.strengths-section,
-.concerns-section,
-.budget-section,
-.salary-ranges-section {
-  margin-bottom: 24px;
-}
-
-.market-data-section h5,
-.recommendations-section h5,
-.action-plan-section h5,
-.strengths-section h5,
-.concerns-section h5,
-.budget-section h5,
-.salary-ranges-section h5 {
-  margin-bottom: 16px;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.salary-range {
-  display: grid;
-  gap: 12px;
-}
-
-.range-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  border-left: 3px solid var(--neon-blue);
-}
-
-.recommendation-item {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-  border-left: 3px solid var(--neon-green);
-}
-
-.recommendation-item strong {
-  color: var(--neon-green);
-  display: block;
-  margin-bottom: 6px;
-}
-
-.recommendation-item p {
-  margin: 0;
-  line-height: 1.5;
-}
-
-.action-list,
-.strengths-list,
-.concerns-list,
-.recommendations-list {
-  list-style: none;
-  padding: 0;
-}
-
-.action-list li,
-.strengths-list li,
-.recommendations-list li {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 8px;
-  border-left: 3px solid var(--neon-yellow);
-  position: relative;
-  padding-left: 30px;
-}
-
-.strengths-list li {
-  border-left-color: var(--neon-green);
-}
-
-.concerns-list li {
-  border-left-color: var(--neon-pink);
-}
-
-.action-list li::before {
-  content: "→";
-  position: absolute;
-  left: 12px;
-  color: var(--neon-yellow);
-  font-weight: 600;
-}
-
-.strengths-list li::before {
-  content: "✓";
-  position: absolute;
-  left: 12px;
-  color: var(--neon-green);
-  font-weight: 600;
-}
-
-.concerns-list li::before {
-  content: "!";
-  position: absolute;
-  left: 12px;
-  color: var(--neon-pink);
-  font-weight: 600;
-}
-
-.recommendations-list li::before {
-  content: "💡";
-  position: absolute;
-  left: 8px;
-}
-
-/* Team Analysis Styles */
-.team-analysis-result {
-  animation: fadeInUp 0.6s ease-out;
-}
-
-.team-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--gradient-secondary);
-  color: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin-bottom: 20px;
-}
-
-.score-circle {
-  text-align: center;
-}
-
-.score-value {
-  font-size: 36px;
-  font-weight: 800;
-  line-height: 1;
-}
-
-.score-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  margin-top: 4px;
-}
-
-.analysis-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
-}
-
-.overview-item {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-}
-
-.overview-label {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 8px;
-  text-transform: uppercase;
-}
-
-.overview-value {
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.overview-value.низький { color: var(--neon-pink); }
-.overview-value.середній { color: var(--neon-yellow); }
-.overview-value.високий { color: var(--neon-green); }
-
-.ranges-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-}
-
-.range-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  text-align: center;
-}
-
-.range-label {
-  font-size: 12px;
-  color: var(--muted);
-  margin-bottom: 8px;
-}
-
-.range-value {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--neon-blue);
-}
-
-/* Mobile Responsiveness */
-@media (max-width: 768px) {
-  .employee-form .form-row {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
   
-  .employee-details {
-    flex-direction: column;
-    align-items: center;
-  }
-  
-  .analysis-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .range-item {
-    flex-direction: column;
-    gap: 4px;
-    text-align: center;
-  }
+  overlay.style.display = 'flex';
+}
 
-  .analysis-type-selector .btn-group .btn {
-    min-width: auto;
-    font-size: 12px;
-    padding: 8px 12px;
-  }
-
-  .team-header {
-    flex-direction: column;
-    gap: 16px;
-    text-align: center;
+function hideSalaryLoading() {
+  const overlay = document.getElementById('salary-loading');
+  if (overlay) {
+    overlay.style.display = 'none';
   }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+// Use main notification system if available
+function showNotification(message, type) {
+  if (window.showNotification) {
+    window.showNotification(message, type);
+  } else {
+    console.log(`[${type}] ${message}`);
   }
 }
-</style>
-`;
 
-// Додати стилі до head при завантаженні
-document.head.insertAdjacentHTML('beforeend', salaryAnalysisStyles);
+// Add custom styles for results
+function addResultStyles() {
+  if (document.getElementById('salary-result-styles')) return;
+  
+  const styles = document.createElement('style');
+  styles.id = 'salary-result-styles';
+  styles.textContent = `
+    /* Result Cards */
+    .employee-result-card,
+    .team-result-card {
+      animation: fadeInUp 0.6s ease-out;
+    }
+    
+    .result-header-section,
+    .team-header-section {
+      background: var(--gradient-primary);
+      color: white;
+      padding: 24px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .employee-info h4,
+    .team-info h4 {
+      font-size: 24px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .employee-badges,
+    .info-badges {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .info-badge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    
+    .info-badge.salary {
+      background: rgba(0, 255, 136, 0.2);
+    }
+    
+    /* Metrics Grid */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .metric-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      gap: 16px;
+      transition: all var(--transition-fast);
+    }
+    
+    .metric-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);
+    }
+    
+    .metric-icon {
+      font-size: 24px;
+      color: var(--accent);
+    }
+    
+    .metric-content {
+      flex: 1;
+    }
+    
+    .metric-label {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    
+    .metric-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    
+    .metric-status {
+      font-size: 13px;
+      color: var(--muted);
+    }
+    
+    /* Analysis Sections */
+    .analysis-section-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .analysis-section-card h5 {
+      font-size: 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    
+    .analysis-section-card.success {
+      border-left: 3px solid var(--neon-green);
+    }
+    
+    .analysis-section-card.warning {
+      border-left: 3px solid var(--neon-yellow);
+    }
+    
+    /* Market Range */
+    .market-range {
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    
+    .range-bar {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .range-labels,
+    .range-values {
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .range-labels span {
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    
+    .range-values span {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    /* Recommendations */
+    .recommendations-grid {
+      display: grid;
+      gap: 16px;
+    }
+    
+    .recommendation-card {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+    }
+    
+    .rec-icon {
+      font-size: 20px;
+      color: var(--accent);
+    }
+    
+    .rec-content strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+    
+    .rec-content p {
+      margin: 0;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    /* Action Timeline */
+    .action-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .action-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+      align-items: center;
+    }
+    
+    .action-number {
+      width: 32px;
+      height: 32px;
+      background: var(--gradient-primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      color: white;
+      flex-shrink: 0;
+    }
+    
+    .action-content {
+      flex: 1;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    /* Efficiency Meter */
+    .efficiency-meter {
+      margin-top: 20px;
+      text-align: center;
+    }
+    
+    .efficiency-circle {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 12px;
+      position: relative;
+    }
+    
+    .efficiency-circle svg {
+      width: 100%;
+      height: 100%;
+    }
+    
+    .efficiency-value {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    
+    .efficiency-value .value {
+      font-size: 32px;
+      font-weight: 700;
+      display: block;
+    }
+    
+    .efficiency-value .label {
+      font-size: 12px;
+      opacity: 0.8;
+    }
+    
+    .efficiency-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    /* Overview Cards */
+    .overview-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .overview-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+    
+    .overview-card i {
+      font-size: 24px;
+      color: var(--accent);
+    }
+    
+    .overview-content {
+      flex: 1;
+    }
+    
+    .overview-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    
+    .overview-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .overview-value.низький { color: var(--neon-pink); }
+    .overview-value.середній { color: var(--neon-yellow); }
+    .overview-value.високий { color: var(--neon-green); }
+    
+    /* Analysis Grid */
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    /* Styled Lists */
+    .styled-list {
+      list-style: none;
+      padding: 0;
+    }
+    
+    .styled-list li {
+      padding: 8px 0;
+      padding-left: 24px;
+      position: relative;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .styled-list li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    
+    .recommendations-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .rec-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+    }
+    
+    .rec-item i {
+      color: var(--accent);
+      margin-top: 2px;
+    }
+    
+    /* Salary Ranges */
+    .salary-ranges {
+      display: flex;
+      justify-content: space-between;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 8px;
+    }
+    
+    .range-item {
+      text-align: center;
+      flex: 1;
+    }
+    
+    .range-item.current {
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+    
+    .range-label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    
+    .range-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    /* Loading Overlay */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(5px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 500;
+    }
+    
+    .loading-content {
+      text-align: center;
+    }
+    
+    .loading-spinner {
+      font-size: 48px;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    
+    .loading-text {
+      font-size: 16px;
+      color: var(--text);
+    }
+    
+    /* Mobile Adjustments */
+    @media (max-width: 768px) {
+      .metrics-grid,
+      .analysis-grid,
+      .overview-cards {
+        grid-template-columns: 1fr;
+      }
+      
+      .salary-ranges {
+        flex-direction: column;
+        gap: 16px;
+      }
+      
+      .range-item.current {
+        border: none;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        padding: 16px 0;
+      }
+      
+      .efficiency-circle {
+        width: 100px;
+        height: 100px;
+      }
+      
+      .efficiency-value .value {
+        font-size: 24px;
+      }
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  `;
+  
+  document.head.appendChild(styles);
+}
 
-// Експортувати функції для глобального використання
+// Export functions for global use
 window.switchAnalysisType = switchAnalysisType;
 window.updatePerformanceValue = updatePerformanceValue;
 window.analyzeEmployee = analyzeEmployee;
 window.analyzeSalaryText = analyzeSalaryText;
 window.clearSalaryResult = clearSalaryResult;
 window.exportSalaryAnalysis = exportSalaryAnalysis;
-window.hideError = hideError;
+
+// Initialize
+console.log('Salary Analysis module loaded 💰');
