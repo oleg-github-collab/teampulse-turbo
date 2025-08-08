@@ -1,7 +1,9 @@
 import express from 'express';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import session from 'express-session';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -9,96 +11,98 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
+// Security and performance middleware
+app.use(helmet());
+app.use(compression());
+app.use(morgan('combined'));
+
+// Parse requests
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
-app.use(session({
-  secret: 'teampulse-turbo-secret-key-2024',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: false, // Set to true in production with HTTPS
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
-
-// Authentication middleware
-const requireAuth = (req, res, next) => {
-  if (req.session && req.session.authenticated) {
-    return next();
-  } else {
-    return res.redirect('/login.html');
-  }
+// Simple auth without sessions (hardcoded for demo)
+const VALID_CREDENTIALS = {
+  username: 'admin',
+  password: 'password123'
 };
 
-// Serve static files (unprotected for login.html)
+// Serve static files
 app.use(express.static(join(__dirname, 'public')));
 
-// Protect main routes
-app.use('/index.html', requireAuth);
-app.use('/app.js', requireAuth);
-app.use('/salary-analysis.js', requireAuth);
-
-// Login route
+// Simple login endpoint (without sessions)
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   
-  // Simple auth (замініть на реальну перевірку)
-  if (username === 'admin' && password === 'password123') {
-    req.session.authenticated = true;
-    req.session.username = username;
+  if (username === VALID_CREDENTIALS.username && password === VALID_CREDENTIALS.password) {
+    // Redirect to main app (no session storage for now)
     res.redirect('/index.html');
   } else {
     res.redirect('/login.html?error=1');
   }
 });
 
-// Logout route
+// Logout endpoint
 app.post('/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Session destroy error:', err);
-    }
-    res.redirect('/login.html');
-  });
+  res.redirect('/login.html');
 });
 
-// API Routes (protected)
-app.post('/api/analyze', requireAuth, async (req, res) => {
+// API Routes
+app.post('/api/analyze', async (req, res) => {
   try {
-    // Your analysis logic here
+    console.log('Analysis request received');
+    
+    // Set headers for streaming response
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
     
-    // Simulate streaming response
-    res.write('data: {"chunk": "Аналіз розпочато..."}\n\n');
+    // Simulate streaming analysis
+    res.write('data: {"chunk": "🔍 Аналіз розпочато..."}\n\n');
+    
     setTimeout(() => {
-      res.write('data: {"chunk": "\\nГотово! Результат аналізу."}\n\n');
+      res.write('data: {"chunk": "\\n\\n📊 Обробка даних..."}\n\n');
+    }, 500);
+    
+    setTimeout(() => {
+      res.write('data: {"chunk": "\\n\\n✅ Аналіз завершено!\\n\\nРезультат:\\n{\\n  \\"status\\": \\"success\\",\\n  \\"analysis\\": \\"Демо результат аналізу переговорів\\",\\n  \\"biases\\": [],\\n  \\"manipulations\\": [],\\n  \\"recommendations\\": [\\"Покращити стратегію переговорів\\"]\\n}"}\n\n');
       res.end();
     }, 1000);
+    
   } catch (error) {
     console.error('Analysis error:', error);
     res.status(500).json({ error: 'Analysis failed' });
   }
 });
 
-app.post('/api/salary', requireAuth, async (req, res) => {
+app.post('/api/salary', async (req, res) => {
   try {
-    // Your salary analysis logic here
+    console.log('Salary analysis request received');
+    
+    // Simulate salary analysis
     const result = {
       ok: true,
       raw: JSON.stringify({
-        team_summary: { total_inefficiency_percent: 25 },
+        team_summary: { 
+          total_inefficiency_percent: Math.floor(Math.random() * 50) + 10,
+          total_employees: 5,
+          average_salary: 45000
+        },
         per_employee: [
-          { name: "Employee 1", inefficiency_percent: 20 },
-          { name: "Employee 2", inefficiency_percent: 30 }
+          { name: "Працівник 1", inefficiency_percent: Math.floor(Math.random() * 30) + 10 },
+          { name: "Працівник 2", inefficiency_percent: Math.floor(Math.random() * 30) + 10 },
+          { name: "Працівник 3", inefficiency_percent: Math.floor(Math.random() * 30) + 10 }
+        ],
+        recommendations: [
+          "Оптимізувати розподіл завдань",
+          "Розглянути корекцію зарплат",
+          "Покращити мотивацію команди"
         ]
       })
     };
+    
     res.json(result);
+    
   } catch (error) {
     console.error('Salary analysis error:', error);
     res.status(500).json({ error: 'Salary analysis failed' });
@@ -107,17 +111,26 @@ app.post('/api/salary', requireAuth, async (req, res) => {
 
 // Root redirect
 app.get('/', (req, res) => {
-  if (req.session && req.session.authenticated) {
-    res.redirect('/index.html');
-  } else {
-    res.redirect('/login.html');
-  }
+  res.redirect('/login.html');
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: '1.1.0'
+  });
 });
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
-  res.status(500).json({ error: 'Internal server error' });
+  res.status(500).json({ 
+    error: 'Internal server error',
+    message: err.message 
+  });
 });
 
 // 404 handler
@@ -125,7 +138,19 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down gracefully');
+  process.exit(0);
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 TeamPulse Turbo server running on http://localhost:${PORT}`);
-  console.log(`📝 Default login: admin / password123`);
+  console.log(`🚀 TeamPulse Turbo server running on port ${PORT}`);
+  console.log(`📝 Demo login: ${VALID_CREDENTIALS.username} / ${VALID_CREDENTIALS.password}`);
+  console.log(`🌐 Health check: http://localhost:${PORT}/health`);
 });
