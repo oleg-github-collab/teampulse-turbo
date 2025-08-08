@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TeamPulse Turbo — Demo (Kaminskyi AI)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/public/styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="nav">
+      <div class="brand">⚡ <strong>TeamPulse Turbo</strong> <span class="badge">based on Kaminskyi AI</span></div>
+      <div class="tabs">
+        <div class="tab active" data-tab="neg">Negotiation</div>
+        <div class="tab" data-tab="salary">Salary Analysis <span class="badge">Demo</span></div>
+        <div class="tab disabled" title="Доступно у повній версії">RACI (Demo)</div>
+        <div class="tab disabled" title="Доступно у повній версії">HR (Demo)</div>
+        <div class="tab disabled" title="Доступно у повній версії">Org Structure (Demo)</div>
+      </div>
+      <div style="margin-left:auto">
+        <form id="logoutForm" method="post" action="/logout"><button class="btn small" type="submit">Вийти</button></form>
+      </div>
+    </div>
+
+    <div id="neg" class="card">
+      <div class="section-title">
+        <h1>Аналіз переговорів</h1>
+        <span class="badge">Ліміт: 13 500 000 токенів/добу, таймаут 12 год (Demo)</span>
+      </div>
+      <p class="muted">DOCX/TXT або вставка тексту. Kaminskyi AI виділяє bias, маніпуляції, риторологічні софізми, когнітивні викривлення, дає стратегію, відповіді на заперечення та оцінку <em>collaboration_ease</em>.</p>
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Профіль компанії</h3>
+          <div class="grid">
+            <div><label>Назва компанії</label><input id="company" placeholder="ТОВ Приклад" /></div>
+            <div><label>Хто веде переговори</label><input id="negotiator" placeholder="Ім'я, посада" /></div>
+            <div><label>Сфера</label><input id="sector" placeholder="SaaS, виробництво ..." /></div>
+            <div><label>Що шукаємо / ціль</label><input id="goal" placeholder="Підписати контракт, PoC ..." /></div>
+            <div><label>Критерії рішення</label><input id="criteria" placeholder="ціна, терміни, ризики ..." /></div>
+            <div><label>Обмеження</label><input id="constraints" placeholder="бюджет, ресурси ..." /></div>
+            <div class="spacer"></div>
+            <div><label>Додатково</label><textarea id="notes" rows="4" placeholder="Деталі, конкуренти ..."></textarea></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Текст для аналізу</h3>
+          <div id="dropzone" class="dropzone">Перетягніть файл .txt або .docx сюди, або скористайтесь полем нижче.</div>
+          <div class="spacer"></div>
+          <textarea id="inputText" rows="10" placeholder="Вставте текст переговорів / інтерв'ю"></textarea>
+          <div class="row" style="align-items:center; justify-content:space-between; margin-top:8px">
+            <div class="note">Audio — скоро. Формати: .txt, .docx</div>
+            <div class="row">
+              <label class="btn small"><input type="file" id="file" accept=".txt,.docx" hidden /><i class="fa fa-file-arrow-up"></i> Обрати файл</label>
+              <button id="analyzeBtn" class="btn primary">Старт аналізу</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row" style="justify-content:space-between; align-items:center">
+          <h3>Результат</h3>
+          <div class="toolbar">
+            <button id="fullscreenBtn" class="btn small"><i class="fa fa-maximize"></i> Повний екран</button>
+            <button id="screenshotBtn" class="btn small"><i class="fa fa-camera"></i> Скриншот</button>
+          </div>
+        </div>
+        <div id="stream" class="output"></div>
+        <div id="badJson" class="banner" style="display:none; margin-top:8px">Вихід містить невалідний JSON. У повній версії — покращене парсування.</div>
+        <div id="annotated" class="card" style="display:none; margin-top:12px">
+          <h3>Підсвічений текст</h3>
+          <div class="note">Жовте — bias, Червоне — manipulation, Зелено-блакитне — fallacy, Фіолетове — cognitive distortion.</div>
+          <div id="highlighted" class="output"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Updated Salary Analysis Section -->
+    <div id="salary" class="card" style="display:none">
+      <div class="section-title">
+        <h1>💰 Аналіз зарплатної ефективності</h1>
+        <span class="badge">Ліміт: 400 000 токенів/добу, таймаут 24 год (Demo)</span>
+      </div>
+      <p class="muted">Аналіз команди через JSON файл, текстовий опис або детальну картку працівника. AI надає ринкові порівняння, рекомендації та план дій.</p>
+
+      <!-- Analysis Type Selector -->
+      <div class="analysis-type-selector" style="margin-bottom: 24px;">
+        <div class="btn-group">
+          <button class="btn" id="text-analysis-btn" onclick="switchAnalysisType('text')">
+            📄 Текстовий опис
+          </button>
+          <button class="btn active" id="form-analysis-btn" onclick="switchAnalysisType('form')">
+            👤 Картка працівника
+          </button>
+          <button class="btn" id="json-analysis-btn" onclick="switchAnalysisType('json')">
+            📁 JSON аналіз
+          </button>
+        </div>
+      </div>
+
+      <!-- Text Analysis Section -->
+      <div class="analysis-section" id="text-analysis" style="display: none;">
+        <div class="card">
+          <h3>Опис команди</h3>
+          <label for="salary-text">Детальний опис команди, ролей та зарплат:</label>
+          <textarea 
+            id="salary-text" 
+            placeholder="Опишіть структуру команди, позиції, поточні зарплати, задачі..."
+            rows="8"
+          ></textarea>
+          <button class="btn primary full" onclick="analyzeSalaryText()">
+            <i class="fa fa-chart-line"></i> Проаналізувати команду
+          </button>
+        </div>
+      </div>
+
+      <!-- Employee Form Analysis Section -->
+      <div class="analysis-section" id="form-analysis">
+        <div class="card">
+          <h3>Профіль працівника</h3>
+          <div class="employee-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="emp-name">Ім'я працівника *</label>
+                <input type="text" id="emp-name" placeholder="Іван Петренко" required>
+              </div>
+              <div class="form-group">
+                <label for="emp-position">Посада *</label>
+                <input type="text" id="emp-position" placeholder="Senior Frontend Developer" required>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="emp-salary">Зарплата (грн/міс) *</label>
+                <input type="number" id="emp-salary" placeholder="45000" min="1000" max="1000000" required>
+              </div>
+              <div class="form-group">
+                <label for="emp-experience">Досвід (років)</label>
+                <input type="number" id="emp-experience" placeholder="3.5" min="0" max="50" step="0.5">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="emp-department">Департамент</label>
+                <select id="emp-department">
+                  <option value="">Оберіть департамент</option>
+                  <option value="IT">IT</option>
+                  <option value="Marketing">Marketing</option>
+                  <option value="Sales">Sales</option>
+                  <option value="HR">HR</option>
+                  <option value="Finance">Finance</option>
+                  <option value="Operations">Operations</option>
+                  <option value="Design">Design</option>
+                  <option value="Product">Product</option>
+                  <option value="Data">Data Science</option>
+                  <option value="QA">QA/Testing</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="emp-location">Локація</label>
+                <select id="emp-location">
+                  <option value="">Оберіть місто</option>
+                  <option value="Київ">Київ</option>
+                  <option value="Харків">Харків</option>
+                  <option value="Дніпро">Дніпро</option>
+                  <option value="Одеса">Одеса</option>
+                  <option value="Львів">Львів</option>
+                  <option value="Запоріжжя">Запоріжжя</option>
+                  <option value="Вінниця">Вінниця</option>
+                  <option value="Remote">Віддалено</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="emp-skills">Ключові навички та технології</label>
+              <textarea id="emp-skills" placeholder="React, TypeScript, Node.js, Python, Docker..." rows="2"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label for="emp-education">Освіта</label>
+              <input type="text" id="emp-education" placeholder="Вища технічна, КПІ, Computer Science">
+            </div>
+
+            <div class="form-group">
+              <label for="emp-performance">Оцінка продуктивності (1-10)</label>
+              <div class="performance-slider">
+                <input type="range" id="emp-performance" min="1" max="10" value="7" oninput="updatePerformanceValue(this.value)">
+                <span class="performance-value" id="performance-value">7</span>
+              </div>
+            </div>
+
+            <button class="btn primary full" onclick="analyzeEmployee()">
+              <i class="fa fa-user-check"></i> Проаналізувати працівника
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON Analysis Section -->
+      <div class="analysis-section" id="json-analysis" style="display: none;">
+        <div class="card">
+          <h3>JSON структура команди</h3>
+          <p class="muted">Вставте JSON — отримаєте аналітику, «спідометр» неефективності та діаграми.</p>
+          <textarea id="salaryJson" rows="12" class="full" placeholder='{
+  "employees": [{
+    "name": "Анна Коваль",
+    "role": "Маркетолог",
+    "hourly_rate": 35,
+    "tasks": [
+      {"task": "Копірайт", "estimated_hours_per_month": 20},
+      {"task": "Воркшоп", "estimated_hours_per_month": 10}
+    ]
+  }, {
+    "name": "Петро Сидоров", 
+    "role": "Frontend Developer",
+    "hourly_rate": 50,
+    "tasks": [
+      {"task": "React Development", "estimated_hours_per_month": 160},
+      {"task": "Code Review", "estimated_hours_per_month": 20}
+    ]
+  }]
+}'></textarea>
+          <div class="row" style="justify-content:flex-end; margin-top:12px">
+            <button id="salaryBtn" class="btn primary">
+              <i class="fa fa-chart-pie"></i> Проаналізувати JSON
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      <div class="analysis-result" id="salary-result" style="display: none;">
+        <div class="result-header">
+          <h3>📊 Результат аналізу</h3>
+          <div class="result-actions">
+            <button class="btn small" onclick="exportSalaryAnalysis()">
+              <i class="fa fa-download"></i> Експорт
+            </button>
+            <button class="btn small secondary" onclick="clearSalaryResult()">
+              <i class="fa fa-times"></i> Очистити
+            </button>
+          </div>
+        </div>
+        <div class="result-content" id="salary-analysis-content"></div>
+      </div>
+
+      <!-- JSON Results (for backward compatibility) -->
+      <div class="grid cols-2" id="json-results" style="display: none;">
+        <div class="card">
+          <h3>JSON результат</h3>
+          <div id="salaryOut" class="output"></div>
+        </div>
+        <div class="card">
+          <h3>Діаграми</h3>
+          <canvas id="gauge" height="200"></canvas>
+          <canvas id="ineffChart" height="200" style="margin-top:12px"></canvas>
+        </div>
+      </div>
+      
+      <div class="banner" style="margin-top:16px">
+        💡 Це демо версія. У повній версії — більше метрик, інтерактивні таблиці, експорт Excel, кращі ліміти та детальніші ринкові дані.
+      </div>
+    </div>
+  </div>
+
+  <!-- Onboarding Overlay -->
+  <div class="onboarding-overlay" id="onboarding">
+    <div class="onboarding-content">
+      <div class="onboarding-step active">
+        <div class="onboarding-icon"><i class="fas fa-bolt"></i></div>
+        <h3 class="onboarding-title">TeamPulse Turbo на Kaminskyi AI</h3>
+        <p class="onboarding-text">Високочастотна паралельна генерація, синтетичні дані та «віртуальна персона» під кожного юзера і кейс → швидкий, економний realtime-аналіз.</p>
+      </div>
+      <div class="onboarding-step">
+        <div class="onboarding-icon"><i class="fas fa-user-gear"></i></div>
+        <h3 class="onboarding-title">1. Заповніть профіль</h3>
+        <p class="onboarding-text">Контекст підвищує точність: компанія, роль, цілі, критерії рішення.</p>
+      </div>
+      <div class="onboarding-step">
+        <div class="onboarding-icon"><i class="fas fa-file-upload"></i></div>
+        <h3 class="onboarding-title">2. Завантажте DOCX/TXT</h3>
+        <p class="onboarding-text">Kaminskyi AI виявить bias, маніпуляції, ретологічні уловки, когнітивні викривлення та оцінить collaboration_ease.</p>
+      </div>
+      <div class="onboarding-step">
+        <div class="onboarding-icon"><i class="fas fa-stream"></i></div>
+        <h3 class="onboarding-title">3. Стрімінг результатів</h3>
+        <p class="onboarding-text">Стратегія, тактики, відповіді на заперечення та підсвічені ризики — у реальному часі.</p>
+      </div>
+      <div class="onboarding-step">
+        <div class="onboarding-icon"><i class="fas fa-rocket"></i></div>
+        <h3 class="onboarding-title">Готово</h3>
+        <p class="onboarding-text">Перейдіть у Salary Analysis (Demo) для оцінки ролей і задач.</p>
+      </div>
+
+      <div class="onboarding-nav">
+        <div class="onboarding-dots">
+          <div class="onboarding-dot active"></div>
+          <div class="onboarding-dot"></div>
+          <div class="onboarding-dot"></div>
+          <div class="onboarding-dot"></div>
+          <div class="onboarding-dot"></div>
+        </div>
+        <div class="onboarding-buttons">
+          <button class="btn" onclick="skipOnboarding()">Пропустити</button>
+          <button class="btn primary" onclick="nextOnboardingStep()">Далі</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/public/app.js"></script>
+  <script src="/public/salary-analysis.js"></script>
+</body>
+</html>
