@@ -9,7 +9,6 @@ import { dirname, join } from 'path';
 
 // Utils
 import logger from './utils/logger.js';
-import { validateRequiredEnvVars } from './utils/validateEnv.js';
 
 // Middleware
 import errorHandler from './middleware/errorHandler.js';
@@ -25,8 +24,8 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Validate environment variables (optional - comment out if causing issues)
-// validateRequiredEnvVars();
+// Environment validation disabled (causing import issues)
+console.log('✅ Server starting...');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -81,7 +80,7 @@ app.get('/health', (req, res) => {
 
 // Demo page
 app.get('/', (req, res) => {
-  res.sendFile(join(__dirname, 'public', 'index.html'));
+  res.sendFile(join(__dirname, 'views', 'demo.html'));
 });
 
 // API Routes
