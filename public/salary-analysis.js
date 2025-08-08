@@ -307,22 +307,68 @@ function exportSalaryAnalysis() {
   });
 }
 
-// Utility functions
+// Utility functions with improved UI feedback
 function showError(message) {
-  // Можна використовувати існуючу функцію showError з app.js
-  // або створити власну реалізацію
   console.error('Salary Analysis Error:', message);
-  alert(message); // Тимчасове рішення
+  
+  // Create or show error notification
+  let errorEl = document.getElementById('salary-error-notification');
+  if (!errorEl) {
+    errorEl = document.createElement('div');
+    errorEl.id = 'salary-error-notification';
+    errorEl.className = 'error-notification';
+    document.body.appendChild(errorEl);
+  }
+  
+  errorEl.innerHTML = `
+    <div class="error-content">
+      <i class="fas fa-exclamation-triangle"></i>
+      <span>${message}</span>
+      <button class="error-close" onclick="hideError()">×</button>
+    </div>
+  `;
+  errorEl.style.display = 'block';
+  
+  // Auto-hide after 10 seconds
+  setTimeout(hideError, 10000);
+}
+
+function hideError() {
+  const errorEl = document.getElementById('salary-error-notification');
+  if (errorEl) {
+    errorEl.style.display = 'none';
+  }
 }
 
 function showLoading(message) {
-  // Реалізація loading стану
   console.log('Loading:', message);
+  
+  // Create or show loading overlay
+  let loadingEl = document.getElementById('salary-loading-overlay');
+  if (!loadingEl) {
+    loadingEl = document.createElement('div');
+    loadingEl.id = 'salary-loading-overlay';
+    loadingEl.className = 'loading-overlay';
+    document.body.appendChild(loadingEl);
+  }
+  
+  loadingEl.innerHTML = `
+    <div class="loading-content">
+      <div class="loading-spinner">
+        <i class="fas fa-spinner fa-spin"></i>
+      </div>
+      <div class="loading-text">${message}</div>
+    </div>
+  `;
+  loadingEl.style.display = 'flex';
 }
 
 function hideLoading() {
-  // Приховати loading стан
   console.log('Loading complete');
+  const loadingEl = document.getElementById('salary-loading-overlay');
+  if (loadingEl) {
+    loadingEl.style.display = 'none';
+  }
 }
 
 // Стилі для результату аналізу
@@ -732,3 +778,4 @@ window.analyzeEmployee = analyzeEmployee;
 window.analyzeSalaryText = analyzeSalaryText;
 window.clearSalaryResult = clearSalaryResult;
 window.exportSalaryAnalysis = exportSalaryAnalysis;
+window.hideError = hideError;

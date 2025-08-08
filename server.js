@@ -46,16 +46,23 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Session management
+// Session management with enhanced configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || 'teampulse-turbo-secret-key-2024',
+  name: 'teampulse.session', // Custom session name
   resave: false,
   saveUninitialized: false,
+  rolling: true, // Reset expiration on activity
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
+    sameSite: 'lax', // CSRF protection
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+  },
+  // Add session store configuration for production
+  ...(process.env.NODE_ENV === 'production' && {
+    proxy: true // Trust first proxy for secure cookies
+  })
 }));
 
 // Simple auth without sessions (configurable via env vars)
@@ -70,36 +77,78 @@ app.use(authMiddleware);
 // Serve static files (after auth middleware)
 app.use(express.static(join(__dirname, 'public')));
 
-// Login endpoint with session management
+// Login endpoint with enhanced session management
 app.post('/login', (req, res) => {
-  const { username, password } = req.body;
-  
-  if (username === VALID_CREDENTIALS.username && password === VALID_CREDENTIALS.password) {
-    // Store authentication in session
-    req.session.authenticated = true;
-    req.session.username = username;
+  try {
+    const { username, password } = req.body;
     
-    // Save session before redirect
-    req.session.save((err) => {
-      if (err) {
-        console.error('Session save error:', err);
-        return res.redirect('/login.html?error=1');
-      }
-      res.redirect('/');
-    });
-  } else {
-    res.redirect('/login.html?error=1');
+    // Log login attempt for debugging
+    console.log(`Login attempt for user: ${username}`);
+    
+    // Validate credentials
+    if (!username || !password) {
+      console.log('Login failed: Missing credentials');
+      return res.redirect('/login.html?error=1');
+    }
+    
+    if (username === VALID_CREDENTIALS.username && password === VALID_CREDENTIALS.password) {
+      console.log('Login successful for user:', username);
+      
+      // Store authentication in session
+      req.session.authenticated = true;
+      req.session.username = username;
+      req.session.loginTime = new Date();
+      
+      // Save session before redirect with better error handling
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.redirect('/login.html?error=1&msg=session');
+        }
+        
+        console.log('Session saved successfully, redirecting to main app');
+        
+        // For AJAX requests, return JSON
+        if (req.headers['content-type']?.includes('application/json') || 
+            req.headers['accept']?.includes('application/json')) {
+          return res.json({ success: true, redirect: '/' });
+        }
+        
+        // For form submissions, redirect
+        res.redirect('/');
+      });
+    } else {
+      console.log('Login failed: Invalid credentials');
+      res.redirect('/login.html?error=1');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    res.redirect('/login.html?error=1&msg=server');
   }
 });
 
 // Logout endpoint
 app.post('/logout', (req, res) => {
+  const username = req.session?.username;
   req.session.destroy((err) => {
     if (err) {
       console.error('Session destroy error:', err);
     }
-    res.clearCookie('connect.sid');
+    res.clearCookie('teampulse.session'); // Use our custom session name
+    res.clearCookie('connect.sid'); // Fallback for default name
+    console.log(`User ${username} logged out successfully`);
     res.redirect('/login.html');
+  });
+});
+
+// Session status endpoint for debugging
+app.get('/api/session', (req, res) => {
+  res.json({
+    authenticated: !!req.session?.authenticated,
+    username: req.session?.username || null,
+    loginTime: req.session?.loginTime || null,
+    sessionId: req.sessionID,
+    cookie: req.session?.cookie
   });
 });
 
@@ -117,9 +166,10 @@ app.post('/api/salary-employee', async (req, res) => {
     console.log('Employee analysis request received');
     
     if (!openaiClient) {
-      return res.status(500).json({ 
+      console.warn('OpenAI API key not configured for salary-employee analysis');
+      return res.status(503).json({ 
         success: false,
-        error: 'OpenAI API не налаштований. Потрібен дійсний API ключ.' 
+        error: 'OpenAI API наразі недоступний. Функція аналізу працівника тимчасово відключена. Зверніться до адміністратора для налаштування API ключа.' 
       });
     }
     
@@ -178,9 +228,10 @@ app.post('/api/salary-text', async (req, res) => {
     console.log('Text analysis request received');
     
     if (!openaiClient) {
-      return res.status(500).json({ 
+      console.warn('OpenAI API key not configured for salary-text analysis');
+      return res.status(503).json({ 
         success: false,
-        error: 'OpenAI API не налаштований. Потрібен дійсний API ключ.' 
+        error: 'OpenAI API наразі недоступний. Функція аналізу тексту тимчасово відключена. Зверніться до адміністратора для налаштування API ключа.' 
       });
     }
     

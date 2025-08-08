@@ -209,23 +209,50 @@
       document.getElementById('error-message').classList.add('show');
     }
     
-    // Handle form submission
-    document.getElementById('login-form').addEventListener('submit', function() {
+    // Handle form submission with improved error handling
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      // Validate input
+      if (!username || !password) {
+        e.preventDefault();
+        showError('Будь ласка, введіть логін та пароль');
+        return;
+      }
+      
+      // Hide any existing errors
+      document.getElementById('error-message').classList.remove('show');
+      
+      // Show loading
       document.getElementById('loading').style.display = 'block';
+      
+      // Form will submit normally after this
     });
     
     // Auto-focus username field
     document.getElementById('username').focus();
     
-    // Enter key support
+    // Enter key support - improved
     document.addEventListener('keypress', function(e) {
       if (e.key === 'Enter') {
-        const form = document.getElementById('login-form');
-        if (document.activeElement.tagName === 'INPUT') {
-          form.submit();
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.tagName === 'INPUT') {
+          const form = document.getElementById('login-form');
+          // Trigger the submit event instead of calling submit() directly
+          // to ensure our validation runs
+          form.dispatchEvent(new Event('submit', {cancelable: true, bubbles: true}));
         }
       }
     });
+    
+    // Utility function to show errors
+    function showError(message) {
+      const errorElement = document.getElementById('error-message');
+      errorElement.textContent = message;
+      errorElement.classList.add('show');
+      document.getElementById('loading').style.display = 'none';
+    }
   </script>
 </body>
 </html>
