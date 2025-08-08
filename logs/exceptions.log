@@ -183,3 +183,83 @@ Error: The OPENAI_API_KEY environment variable is missing or empty; either provi
   "version": "1.1.0",
   "environment": "development"
 }
+[2025-08-08 21:25:51] ERROR: uncaughtException: listen EADDRINUSE: address already in use 0.0.0.0:3000
+Error: listen EADDRINUSE: address already in use 0.0.0.0:3000
+    at Server.setupListenHandle [as _listen2] (node:net:1908:16)
+    at listenInCluster (node:net:1965:12)
+    at doListen (node:net:2139:7)
+    at process.processTicksAndRejections (node:internal/process/task_queues:83:21) {
+  "error": {
+    "code": "EADDRINUSE",
+    "errno": -48,
+    "syscall": "listen",
+    "address": "0.0.0.0",
+    "port": 3000
+  },
+  "stack": "Error: listen EADDRINUSE: address already in use 0.0.0.0:3000\n    at Server.setupListenHandle [as _listen2] (node:net:1908:16)\n    at listenInCluster (node:net:1965:12)\n    at doListen (node:net:2139:7)\n    at process.processTicksAndRejections (node:internal/process/task_queues:83:21)",
+  "exception": true,
+  "date": "Fri Aug 08 2025 21:25:51 GMT+0200 (Central European Summer Time)",
+  "process": {
+    "pid": 30974,
+    "uid": 501,
+    "gid": 20,
+    "cwd": "/Users/olehkaminskyi/Desktop/TeamPulse turbo",
+    "execPath": "/Users/olehkaminskyi/.nvm/versions/node/v20.19.2/bin/node",
+    "version": "v20.19.2",
+    "argv": [
+      "/Users/olehkaminskyi/.nvm/versions/node/v20.19.2/bin/node",
+      "/Users/olehkaminskyi/Desktop/TeamPulse turbo/server.js"
+    ],
+    "memoryUsage": {
+      "rss": 75350016,
+      "heapTotal": 33673216,
+      "heapUsed": 17995128,
+      "external": 2560932,
+      "arrayBuffers": 16875
+    }
+  },
+  "os": {
+    "loadavg": [
+      5.8515625,
+      5.23486328125,
+      4.88427734375
+    ],
+    "uptime": 256090
+  },
+  "trace": [
+    {
+      "column": 16,
+      "file": "node:net",
+      "function": "Server.setupListenHandle [as _listen2]",
+      "line": 1908,
+      "method": "setupListenHandle [as _listen2]",
+      "native": false
+    },
+    {
+      "column": 12,
+      "file": "node:net",
+      "function": "listenInCluster",
+      "line": 1965,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 7,
+      "file": "node:net",
+      "function": "doListen",
+      "line": 2139,
+      "method": null,
+      "native": false
+    },
+    {
+      "column": 21,
+      "file": "node:internal/process/task_queues",
+      "function": "process.processTicksAndRejections",
+      "line": 83,
+      "method": "processTicksAndRejections",
+      "native": false
+    }
+  ],
+  "version": "1.1.0",
+  "environment": "development"
+}

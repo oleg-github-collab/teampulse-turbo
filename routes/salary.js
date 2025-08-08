@@ -2,9 +2,8 @@ import express from "express";
 import multer from "multer";
 import { extractTextFromBuffer } from "../utils/textExtract.js";
 import { salarySystemPrompt, salaryUserPrompt } from "../utils/prompts.js";
-// import { estimateTokensFromChars, checkAndConsume } from "../utils/rateLimiter.js";
+import { askGPT, client as openaiClient } from "../utils/openAIClient.js";
 import logger from '../utils/logger.js';
-import OpenAI from "openai";
 
 const router = express.Router();
 const upload = multer({
@@ -15,11 +14,6 @@ const upload = multer({
 // Constants
 const DAILY_LIMIT = Number(process.env.DAILY_TOKENS_LIMIT || 400000);
 const TIMEOUT_HOURS = Number(process.env.SALARY_TIMEOUT_HOURS || 24);
-
-// OpenAI клієнт
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-}) : null;
 
 router.post("/", async (req, res) => {
   try {
@@ -43,46 +37,38 @@ router.post("/", async (req, res) => {
     // const check = checkAndConsume(ip, "salary", 5000, DAILY_LIMIT, TIMEOUT_HOURS);
     // if (!check.ok) return res.status(429).json({ ok: false, error: check.error });
 
-    
-    // Check if OpenAI is available, otherwise use demo data
+    // Check if OpenAI is available
+    if (!openaiClient) {
+      return res.status(500).json({ 
+        ok: false, 
+        error: "OpenAI API не налаштований. Потрібен дійсний API ключ для роботи системи." 
+      });
+    }
+
     let result;
-    if (!openai) {
-      // Demo result for Railway deployment
-      result = JSON.stringify({
-        team_summary: { 
-          total_inefficiency_percent: Math.floor(Math.random() * 30) + 15,
-          total_employees: Array.isArray(payload.employees) ? payload.employees.length : 3,
-          average_salary: 45000
-        },
-        per_employee: Array.isArray(payload.employees) ? payload.employees.map((emp, i) => ({
-          name: emp.name || `Працівник ${i + 1}`,
-          inefficiency_percent: Math.floor(Math.random() * 25) + 10
-        })) : [
-          { name: "Демо працівник 1", inefficiency_percent: 15 },
-          { name: "Демо працівник 2", inefficiency_percent: 20 },
-          { name: "Демо працівник 3", inefficiency_percent: 12 }
-        ],
-        recommendations: [
-          "Оптимізувати розподіл завдань між командою",
-          "Розглянути корекцію зарплат відповідно до продуктивності",
-          "Впровадити систему мотивації та KPI",
-          "Покращити процеси комунікації в команді"
-        ]
-      });
-    } else {
-      const systemPrompt = "Ви - експерт з аналізу зарплат та ефективності команд.";
-      const userPrompt = `Проаналізуйте дані команди: ${JSON.stringify(payload, null, 2)}`;
+    try {
+      const systemPrompt = salarySystemPrompt();
+      const userPrompt = salaryUserPrompt(payload);
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4",
-        temperature: 0.2,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ]
+      logger.info('🚀 Starting salary analysis', {
+        payloadType: typeof payload,
+        hasEmployees: Array.isArray(payload.employees),
+        employeeCount: Array.isArray(payload.employees) ? payload.employees.length : 0,
+        ip
       });
 
-      result = response.choices[0]?.message?.content || "";
+      result = await askGPT(systemPrompt, userPrompt, false);
+      
+      logger.info('✅ Salary analysis completed successfully', {
+        responseLength: result.length
+      });
+      
+    } catch (openaiError) {
+      logger.error('OpenAI API error in salary route:', openaiError);
+      return res.status(500).json({ 
+        ok: false, 
+        error: `Помилка OpenAI API: ${openaiError.message}` 
+      });
     }
 
     logger.info('Salary analysis completed', { 

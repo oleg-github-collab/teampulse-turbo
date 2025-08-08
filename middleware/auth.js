@@ -2,27 +2,31 @@ import logger from '../utils/logger.js';
 
 export default function authMiddleware(req, res, next) {
   try {
-    const isLoggedIn = req.cookies.loggedIn === "true";
-    
-    // Публічні шляхи
+    // Публічні шляхи (не потребують автентифікації)
     const publicPaths = [
+      '/login.html',
       '/login',
-      '/health',
-      '/api/auth'
+      '/health'
     ];
     
     const isPublicPath = publicPaths.some(path => req.path.startsWith(path));
     const isStaticFile = /\.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$/i.test(req.path);
     
+    // Дозволити доступ до публічних шляхів та статичних файлів
     if (isPublicPath || isStaticFile) {
       return next();
     }
     
-    if (!isLoggedIn) {
+    // Перевірити автентифікацію
+    const isAuthenticated = req.session && req.session.authenticated === true;
+    
+    if (!isAuthenticated) {
+      // Для API запитів повертати 401
       if (req.path.startsWith('/api/')) {
         return res.status(401).json({ error: 'Необхідна авторизація' });
       }
-      return res.redirect('/login');
+      // Для веб запитів перенаправляти на логін
+      return res.redirect('/login.html');
     }
     
     next();

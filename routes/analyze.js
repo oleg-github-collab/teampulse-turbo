@@ -2,20 +2,14 @@ import express from "express";
 import multer from "multer";
 import { extractTextFromBuffer } from "../utils/textExtract.js";
 import { negotiationSystemPrompt, negotiationUserPrompt } from "../utils/prompts.js";
-// import { estimateTokensFromChars, checkAndConsume } from "../utils/rateLimiter.js";
+import { askGPT, client as openaiClient } from "../utils/openAIClient.js";
 import logger from '../utils/logger.js';
-import OpenAI from "openai";
 
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 25 * 1024 * 1024 } // 25MB
 });
-
-// OpenAI клієнт
-const openai = process.env.OPENAI_API_KEY ? new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-}) : null;
 
 const DAILY_LIMIT = Number(process.env.DAILY_TOKENS_LIMIT || 13500000);
 const TIMEOUT_HOURS = Number(process.env.NEGOTIATION_TIMEOUT_HOURS || 12);
@@ -41,37 +35,41 @@ router.post("/analyze", upload.single("file"), async (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
+    const systemPrompt = negotiationSystemPrompt();
+    const userPrompt = negotiationUserPrompt(profile, plainText);
+
     // Check if OpenAI is available
-    if (!openai) {
-      res.write('data: {"chunk": "🔍 Аналіз розпочато... (демо режим)"}\\n\\n');
-      setTimeout(() => {
-        res.write('data: {"chunk": "\\n\\n📊 Обробка даних..."}\\n\\n');
-      }, 500);
-      
-      setTimeout(() => {
-        res.write('data: {"chunk": "\\n\\n✅ Аналіз завершено!\\n\\nРезультат (демо):\\n{\\n  \\"status\\": \\"success\\",\\n  \\"analysis\\": \\"Демо результат аналізу переговорів\\",\\n  \\"biases\\": [],\\n  \\"manipulations\\": [],\\n  \\"recommendations\\": [\\"Покращити стратегію переговорів\\", \\"Використати активне слухання\\"]\\n}"}\\n\\n');
-        res.write('event: done\\ndata: {}\\n\\n');
-        res.end();
-      }, 1000);
+    if (!openaiClient) {
+      res.write('data: {"chunk": "❌ OpenAI API не налаштований"}\\n\\n');
+      res.write('event: error\\ndata: {"error": "OpenAI API key відсутній"}\\n\\n');
+      res.end();
       return;
     }
 
-    const sys = negotiationSystemPrompt();
-    const user = negotiationUserPrompt(profile, plainText);
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      temperature: 0.2,
-      messages: [
-        { role: "system", content: sys },
-        { role: "user", content: user }
-      ],
-      stream: true
+    logger.info('🚀 Starting negotiation analysis', {
+      profileKeys: Object.keys(profile),
+      textLength: plainText.length,
+      ip: req.ip
     });
 
-    for await (const chunk of response) {
-      const delta = chunk.choices?.[0]?.delta?.content || "";
-      if (delta) res.write(`data: ${JSON.stringify({ chunk: delta })}\n\n`);
+    try {
+      // Use streaming response from OpenAI
+      const response = await askGPT(systemPrompt, userPrompt, true);
+
+      for await (const chunk of response) {
+        const delta = chunk.choices?.[0]?.delta?.content || "";
+        if (delta) {
+          res.write(`data: ${JSON.stringify({ chunk: delta })}\n\n`);
+        }
+      }
+      
+      logger.info('✅ Negotiation analysis completed successfully');
+    } catch (openaiError) {
+      logger.error('OpenAI API error in analyze route:', openaiError);
+      res.write(`data: {"chunk": "❌ Помилка OpenAI API: ${openaiError.message}"}\\n\\n`);
+      res.write(`event: error\\ndata: {"error": "${openaiError.message}"}\\n\\n`);
+      res.end();
+      return;
     }
 
     res.write(`event: done\ndata: {}\n\n`);

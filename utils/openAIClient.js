@@ -1,84 +1,109 @@
 import OpenAI from 'openai';
 import logger from './logger.js';
 
-// Ініціалізація клієнта GPT-5 через офіційний SDK
-const client = new OpenAI({
+// Ініціалізація клієнта OpenAI через офіційний SDK
+const client = process.env.OPENAI_API_KEY ? new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
   timeout: 120000, // 2 хвилини для складних запитів
   maxRetries: 3
-});
+}) : null;
 
 /**
- * Створює інстанс GPT-5 для генерації відповіді
- * @param {string} prompt - текст запиту
- * @returns {Promise<string>} - відповідь GPT-5
+ * Створює запит до OpenAI GPT
+ * @param {string} systemPrompt - системний промпт
+ * @param {string} userPrompt - користувацький промпт
+ * @param {boolean} stream - чи використовувати потоковий режим
+ * @returns {Promise<string|ReadableStream>} - відповідь GPT
  */
-const askGPT5 = async (prompt) => {
+const askGPT = async (systemPrompt, userPrompt, stream = false) => {
   try {
-    logger.info('🤖 GPT-5 Request initiated', { 
-      promptLength: prompt?.length,
+    if (!client) {
+      throw new Error("OpenAI API key не налаштований");
+    }
+
+    logger.info('🤖 OpenAI Request initiated', { 
+      systemPromptLength: systemPrompt?.length,
+      userPromptLength: userPrompt?.length,
+      stream,
       timestamp: new Date().toISOString()
     });
 
-    const response = await client.responses.create({
-      model: "gpt-5",
-      input: prompt,
+    const response = await client.chat.completions.create({
+      model: "gpt-4",
+      temperature: 0.2,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ],
+      stream: stream
     });
 
-    logger.info('✅ GPT-5 Response received', {
-      outputLength: response.output_text?.length,
+    if (stream) {
+      return response;
+    }
+
+    const content = response.choices[0]?.message?.content || "";
+    
+    logger.info('✅ OpenAI Response received', {
+      outputLength: content.length,
       success: true
     });
 
-    return response.output_text;
+    return content;
 
   } catch (error) {
-    logger.error("❌ Kaminskyi AI Error:", {
+    logger.error("❌ OpenAI Error:", {
       error: error.message,
       stack: error.stack,
-      prompt: prompt?.substring(0, 100) + '...'
+      systemPrompt: systemPrompt?.substring(0, 100) + '...',
+      userPrompt: userPrompt?.substring(0, 100) + '...'
     });
     
-    throw new Error("Не вдалося отримати відповідь від Kaminskyi AI.");
+    throw new Error(`Не вдалося отримати відповідь від OpenAI: ${error.message}`);
   }
 };
 
 /**
- * Створює структурований запит до GPT-5 з системним та користувацьким промптом
- * @param {string} systemPrompt - системний промпт
- * @param {string} userPrompt - користувацький промпт
- * @returns {Promise<string>} - відповідь GPT-5
+ * Створює структурований запит до GPT з простим промптом
+ * @param {string} prompt - текст запиту
+ * @returns {Promise<string>} - відповідь GPT
  */
-const askGPT5WithSystem = async (systemPrompt, userPrompt) => {
-  const combinedPrompt = `System: ${systemPrompt}\n\nUser: ${userPrompt}`;
-  return await askGPT5(combinedPrompt);
+const askGPTSimple = async (prompt) => {
+  return await askGPT("Ти корисний асистент.", prompt, false);
 };
 
 /**
- * Перевіряє з'єднання з GPT-5
+ * Перевіряє з'єднання з OpenAI
  * @returns {Promise<boolean>} - статус з'єднання
  */
-const testGPT5Connection = async () => {
+const testOpenAIConnection = async () => {
   try {
-    await askGPT5("Test connection");
-    logger.info('🟢 GPT-5 connection test successful');
+    if (!client) {
+      logger.error('🔴 OpenAI client not initialized - missing API key');
+      return false;
+    }
+    
+    await askGPTSimple("Test connection - reply with 'OK'");
+    logger.info('🟢 OpenAI connection test successful');
     return true;
   } catch (error) {
-    logger.error('🔴 GPT-5 connection test failed:', error.message);
+    logger.error('🔴 OpenAI connection test failed:', error.message);
     return false;
   }
 };
 
 // ESM export
 export { 
-  askGPT5, 
-  askGPT5WithSystem,
-  testGPT5Connection 
+  askGPT, 
+  askGPTSimple,
+  testOpenAIConnection,
+  client
 };
 
 // Default export для зворотної сумісності
 export default { 
-  askGPT5, 
-  askGPT5WithSystem,
-  testGPT5Connection 
+  askGPT, 
+  askGPTSimple,
+  testOpenAIConnection,
+  client
 };

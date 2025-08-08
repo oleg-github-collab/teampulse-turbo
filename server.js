@@ -7,6 +7,10 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+
+// Import middleware
+import authMiddleware from './middleware/auth.js';
 
 // Import routes
 import analyzeRoutes from './routes/analyze.js';
@@ -42,22 +46,39 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
+// Session management
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'teampulse-turbo-secret-key-2024',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 // Simple auth without sessions (configurable via env vars)
 const VALID_CREDENTIALS = {
   username: process.env.DEMO_USERNAME || 'admin',
   password: process.env.DEMO_PASSWORD || 'password123'
 };
 
-// Serve static files
+// Authentication middleware for protected routes
+app.use(authMiddleware);
+
+// Serve static files (after auth middleware)
 app.use(express.static(join(__dirname, 'public')));
 
-// Simple login endpoint (without sessions)
+// Login endpoint with session management
 app.post('/login', (req, res) => {
   const { username, password } = req.body;
   
   if (username === VALID_CREDENTIALS.username && password === VALID_CREDENTIALS.password) {
-    // Redirect to main app (no session storage for now)
-    res.redirect('/index.html');
+    // Store authentication in session
+    req.session.authenticated = true;
+    req.session.username = username;
+    res.redirect('/');
   } else {
     res.redirect('/login.html?error=1');
   }
@@ -65,12 +86,21 @@ app.post('/login', (req, res) => {
 
 // Logout endpoint
 app.post('/logout', (req, res) => {
-  res.redirect('/login.html');
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Session destroy error:', err);
+    }
+    res.clearCookie('connect.sid');
+    res.redirect('/login.html');
+  });
 });
 
 // API Routes
 app.use('/api', analyzeRoutes);
 app.use('/api/salary', salaryRoutes);
+
+// Import OpenAI client
+import { askGPT, client as openaiClient } from './utils/openAIClient.js';
 
 // Additional salary analysis endpoints
 app.post('/api/salary-employee', async (req, res) => {
@@ -78,38 +108,50 @@ app.post('/api/salary-employee', async (req, res) => {
     const employeeData = req.body;
     console.log('Employee analysis request received');
     
-    // Mock analysis for demo
-    const analysis = {
-      employee_analysis: {
-        salary_fairness: Math.floor(Math.random() * 4) + 6,
-        market_position: 'конкурентоспроможна',
-        performance_ratio: Math.floor(Math.random() * 3) + 7,
-        growth_potential: 'високий'
-      },
-      risk_assessment: {
-        flight_probability: Math.floor(Math.random() * 3) + 2,
-        retention_risk: 'низький'
-      },
-      market_data: {
-        position_range_min: Math.floor(employeeData.salary * 0.8),
-        market_median: Math.floor(employeeData.salary * 1.1),
-        position_range_max: Math.floor(employeeData.salary * 1.4)
-      },
-      recommendations: {
-        salary_adjustment: 'Зарплата відповідає ринковим стандартам. Розгляньте підвищення на 10-15% через 6 місяців.',
-        career_development: 'Рекомендуємо додаткове навчання в сучасних технологіях для підвищення кваліфікації.',
-        skills_improvement: 'Розвиток лідерських навичок та участь у cross-functional проектах.'
-      },
-      action_plan: [
-        'Провести зустріч 1-на-1 для обговорення цілей',
-        'Створити план розвитку на наступні 6 місяців',
-        'Запланувати ревізію зарплати через квартал'
-      ]
-    };
+    if (!openaiClient) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'OpenAI API не налаштований. Потрібен дійсний API ключ.' 
+      });
+    }
+    
+    const systemPrompt = `Ви - експерт з HR аналітики та оцінки персоналу. Проаналізуйте працівника та надайте детальну оцінку з рекомендаціями. Відповідайте у форматі JSON.`;
+    
+    const userPrompt = `Проаналізуйте працівника з такими даними:
+Ім'я: ${employeeData.name || 'Не вказано'}
+Посада: ${employeeData.position || 'Не вказано'}
+Зарплата: ${employeeData.salary || 'Не вказано'} грн/міс
+Досвід: ${employeeData.experience || 'Не вказано'} років
+Департамент: ${employeeData.department || 'Не вказано'}
+Локація: ${employeeData.location || 'Не вказано'}
+Навички: ${employeeData.skills || 'Не вказано'}
+Освіта: ${employeeData.education || 'Не вказано'}
+Продуктивність (1-10): ${employeeData.performance || 'Не вказано'}
+
+Надайте аналіз у JSON форматі з полями:
+- employee_analysis (salary_fairness, market_position, performance_ratio, growth_potential)
+- risk_assessment (flight_probability, retention_risk)  
+- market_data (position_range_min, market_median, position_range_max)
+- recommendations (salary_adjustment, career_development, skills_improvement)
+- action_plan (масив рекомендацій)`;
+
+    const analysis = await askGPT(systemPrompt, userPrompt, false);
+    
+    let parsedAnalysis;
+    try {
+      parsedAnalysis = JSON.parse(analysis);
+    } catch {
+      // Fallback if JSON parsing fails
+      parsedAnalysis = {
+        employee_analysis: { 
+          analysis_text: analysis.substring(0, 500) + "..." 
+        }
+      };
+    }
     
     res.json({ 
       success: true,
-      analysis: analysis,
+      analysis: parsedAnalysis,
       employee: employeeData
     });
     
@@ -117,62 +159,74 @@ app.post('/api/salary-employee', async (req, res) => {
     console.error('Employee analysis error:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Помилка аналізу працівника' 
+      error: `Помилка аналізу працівника: ${error.message}` 
     });
   }
 });
 
 app.post('/api/salary-text', async (req, res) => {
   try {
-    const _textData = req.body.text;
+    const textData = req.body.text;
     console.log('Text analysis request received');
     
-    // Mock analysis for demo
-    const analysis = {
-      overall_efficiency: Math.floor(Math.random() * 3) + 7,
-      market_alignment: 'середній',
-      cost_effectiveness: Math.floor(Math.random() * 2) + 8,
-      strengths: [
-        'Добре збалансована команда за досвідом',
-        'Конкурентоспроможні зарплати для більшості позицій',
-        'Хороший розподіл ролей та обов\'язків'
-      ],
-      concerns: [
-        'Можливі дисбаланси в оплаті схожих ролей',
-        'Потенційний ризик відтоку талантів',
-        'Потреба в оптимізації бюджету на зарплати'
-      ],
-      recommendations: [
-        'Провести аудит зарплатної справедливості',
-        'Впровадити систему оцінки продуктивності',
-        'Розробити план утримання ключових працівників',
-        'Оптимізувати структуру команди'
-      ],
-      budget_optimization: 'Рекомендуємо перерозподіл до 15% зарплатного бюджету для покращення справедливості та утримання талантів.',
-      salary_ranges: {
-        recommended_min: 25000,
-        current_average: 45000,
-        recommended_max: 85000
-      }
-    };
+    if (!openaiClient) {
+      return res.status(500).json({ 
+        success: false,
+        error: 'OpenAI API не налаштований. Потрібен дійсний API ключ.' 
+      });
+    }
+    
+    const systemPrompt = `Ви - експерт з аналізу команд та зарплатної політики. Проаналізуйте опис команди та надайте рекомендації щодо оптимізації зарплат та ефективності. Відповідайте у форматі JSON.`;
+    
+    const userPrompt = `Проаналізуйте наступний опис команди та зарплатної структури:
+
+${textData}
+
+Надайте аналіз у JSON форматі з полями:
+- overall_efficiency (число 1-10)
+- market_alignment (текст)
+- cost_effectiveness (число 1-10)
+- strengths (масив сильних сторін)
+- concerns (масив проблем)
+- recommendations (масив рекомендацій)
+- budget_optimization (текстова рекомендація)
+- salary_ranges (recommended_min, current_average, recommended_max)`;
+
+    const analysis = await askGPT(systemPrompt, userPrompt, false);
+    
+    let parsedAnalysis;
+    try {
+      parsedAnalysis = JSON.parse(analysis);
+    } catch {
+      // Fallback if JSON parsing fails
+      parsedAnalysis = {
+        analysis_text: analysis.substring(0, 1000) + "...",
+        overall_efficiency: 7,
+        market_alignment: "потребує аналізу"
+      };
+    }
     
     res.json({ 
       success: true,
-      analysis: analysis
+      analysis: parsedAnalysis
     });
     
   } catch (error) {
     console.error('Text analysis error:', error);
     res.status(500).json({ 
       success: false,
-      error: 'Помилка аналізу тексту' 
+      error: `Помилка аналізу тексту: ${error.message}` 
     });
   }
 });
 
-// Root redirect
+// Root redirect - serve main app if authenticated, otherwise login
 app.get('/', (req, res) => {
-  res.redirect('/login.html');
+  if (req.session.authenticated) {
+    res.sendFile(join(__dirname, 'public', 'index.html'));
+  } else {
+    res.redirect('/login.html');
+  }
 });
 
 // Health check
