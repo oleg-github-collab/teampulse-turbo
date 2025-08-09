@@ -15,411 +15,447 @@
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 </head>
 <body>
-  <!-- Mobile Menu Toggle -->
-  <button class="mobile-menu-toggle" id="mobile-menu-toggle" title="Меню">
-    <i class="fas fa-bars"></i>
-  </button>
+  <div class="app-container">
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobile-menu-toggle" title="Меню">
+      <i class="fas fa-bars"></i>
+    </button>
 
-  <!-- Left Sidebar - Client Profile -->
-  <aside class="sidebar sidebar-left" id="sidebar-left">
-    <div class="sidebar-header">
-      <h3>👤 Профіль клієнта</h3>
-      <button class="sidebar-close mobile-only" onclick="closeSidebar('left')">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    
-    <div class="sidebar-content">
-      <div class="profile-section">
-        <div class="profile-field">
-          <label>Назва компанії</label>
-          <input id="company" placeholder="ТОВ Приклад" />
-        </div>
-        
-        <div class="profile-field">
-          <label>Переговорник</label>
-          <input id="negotiator" placeholder="Ім'я, посада" />
-        </div>
-        
-        <div class="profile-field">
-          <label>Сфера діяльності</label>
-          <input id="sector" placeholder="SaaS, виробництво..." />
-        </div>
-        
-        <div class="profile-field">
-          <label>Ціль переговорів</label>
-          <input id="goal" placeholder="Підписати контракт..." />
-        </div>
-        
-        <div class="profile-field">
-          <label>Критерії рішення</label>
-          <input id="criteria" placeholder="Ціна, терміни..." />
-        </div>
-        
-        <div class="profile-field">
-          <label>Обмеження</label>
-          <input id="constraints" placeholder="Бюджет, ресурси..." />
-        </div>
-        
-        <div class="profile-field">
-          <label>Додаткові нотатки</label>
-          <textarea id="notes" rows="4" placeholder="Деталі, конкуренти..."></textarea>
-        </div>
-      </div>
-      
-      <div class="client-list">
-        <h4>Збережені клієнти</h4>
-        <div id="saved-clients"></div>
-        <button class="btn-secondary full-width" onclick="saveCurrentClient()">
-          <i class="fas fa-save"></i> Зберегти поточного
-        </button>
-        <button class="btn-ghost full-width" onclick="clearClients()">
-          <i class="fas fa-trash"></i> Очистити всіх
-        </button>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main Content Area -->
-  <main class="main-content">
-    <!-- Top Navigation -->
-    <nav class="top-nav">
-      <div class="nav-brand">
-        <span class="brand-icon">⚡</span>
-        <span class="brand-text">TeamPulse Turbo</span>
-        <span class="badge">Kaminskyi AI</span>
-      </div>
-      
-      <div class="nav-tabs">
-        <button class="nav-tab active" data-tab="neg">
-          <i class="fas fa-handshake"></i>
-          <span>Negotiation</span>
-        </button>
-        <button class="nav-tab" data-tab="salary">
-          <i class="fas fa-chart-line"></i>
-          <span>Salary</span>
-          <span class="badge-small">Demo</span>
-        </button>
-        <button class="nav-tab disabled" data-tab="raci">
-          <i class="fas fa-tasks"></i>
-          <span>RACI</span>
-        </button>
-        <button class="nav-tab disabled" data-tab="hr">
-          <i class="fas fa-users"></i>
-          <span>HR</span>
-        </button>
-        <button class="nav-tab disabled" data-tab="org">
-          <i class="fas fa-sitemap"></i>
-          <span>Org</span>
+    <!-- Left Sidebar - Client Profile -->
+    <aside class="sidebar sidebar-left" id="sidebar-left">
+      <div class="sidebar-header">
+        <h3>👤 Профіль клієнта</h3>
+        <button class="sidebar-close" onclick="closeSidebar('left')">
+          <i class="fas fa-times"></i>
         </button>
       </div>
       
-      <div class="nav-actions">
-        <button class="nav-action" id="theme-toggle" title="Змінити тему">
-          <i class="fas fa-moon"></i>
-        </button>
-        <button class="nav-action" id="notifications" title="Повідомлення">
-          <i class="fas fa-bell"></i>
-          <span class="notification-badge">3</span>
-        </button>
-        <button class="nav-action" id="right-sidebar-toggle" title="Інструменти">
-          <i class="fas fa-sliders-h"></i>
-        </button>
-        <form id="logoutForm" method="post" action="/logout" style="display: inline;">
-          <button class="nav-action logout" type="submit" title="Вийти">
-            <i class="fas fa-sign-out-alt"></i>
-          </button>
-        </form>
-      </div>
-    </nav>
-
-    <!-- Tab Content -->
-    <div class="tab-content">
-      <!-- Negotiation Tab -->
-      <div id="neg" class="tab-pane active">
-        <div class="content-header">
-          <h1>
-            <i class="fas fa-handshake"></i>
-            Аналіз переговорів
-          </h1>
-          <div class="header-actions">
-            <span class="status-badge">
-              <i class="fas fa-circle"></i>
-              Ліміт: 13.5M токенів/добу
-            </span>
+      <div class="sidebar-content">
+        <div class="profile-section">
+          <div class="profile-field">
+            <label>Назва компанії</label>
+            <input id="company" placeholder="ТОВ Приклад" />
+          </div>
+          
+          <div class="profile-field">
+            <label>Переговорник</label>
+            <input id="negotiator" placeholder="Ім'я, посада" />
+          </div>
+          
+          <div class="profile-field">
+            <label>Сфера діяльності</label>
+            <input id="sector" placeholder="SaaS, виробництво..." />
+          </div>
+          
+          <div class="profile-field">
+            <label>Ціль переговорів</label>
+            <input id="goal" placeholder="Підписати контракт..." />
+          </div>
+          
+          <div class="profile-field">
+            <label>Критерії рішення</label>
+            <input id="criteria" placeholder="Ціна, терміни..." />
+          </div>
+          
+          <div class="profile-field">
+            <label>Обмеження</label>
+            <input id="constraints" placeholder="Бюджет, ресурси..." />
+          </div>
+          
+          <div class="profile-field">
+            <label>Додаткові нотатки</label>
+            <textarea id="notes" rows="4" placeholder="Деталі, конкуренти..."></textarea>
           </div>
         </div>
         
-        <div class="content-description">
-          <p>AI аналізує переговори, виявляє маніпуляції, bias та когнітивні викривлення. Підтримка DOCX/TXT файлів.</p>
+        <div class="client-list">
+          <h4>Збережені клієнти</h4>
+          <div id="saved-clients"></div>
+          <button class="btn-secondary full-width" onclick="saveCurrentClient()">
+            <i class="fas fa-save"></i> Зберегти поточного
+          </button>
+          <button class="btn-ghost full-width" onclick="clearClients()">
+            <i class="fas fa-trash"></i> Очистити всіх
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Top Navigation -->
+      <nav class="top-nav">
+        <div class="nav-brand">
+          <span class="brand-icon">⚡</span>
+          <span class="brand-text">TeamPulse Turbo</span>
+          <span class="badge">Kaminskyi AI</span>
         </div>
         
-        <div class="analysis-area">
-          <div class="input-section">
-            <h3>Текст для аналізу</h3>
-            <div id="dropzone" class="dropzone">
-              <i class="fas fa-cloud-upload-alt"></i>
-              <p>Перетягніть файл сюди</p>
-              <span>або натисніть для вибору</span>
-            </div>
-            
-            <div class="text-input-wrapper">
-              <textarea id="inputText" placeholder="Або вставте текст переговорів тут..."></textarea>
-              <div class="input-actions">
-                <label class="file-input-label">
-                  <input type="file" id="file" accept=".txt,.docx" hidden />
-                  <i class="fas fa-file-upload"></i>
-                  Обрати файл
-                </label>
-                <button id="analyzeBtn" class="btn-primary">
-                  <i class="fas fa-play"></i>
-                  Аналізувати
-                </button>
-              </div>
+        <div class="nav-tabs">
+          <button class="nav-tab active" data-tab="neg">
+            <i class="fas fa-handshake"></i>
+            <span>Negotiation</span>
+          </button>
+          <button class="nav-tab" data-tab="salary">
+            <i class="fas fa-chart-line"></i>
+            <span>Salary</span>
+          </button>
+          <button class="nav-tab disabled" data-tab="raci">
+            <i class="fas fa-tasks"></i>
+            <span>RACI</span>
+          </button>
+          <button class="nav-tab disabled" data-tab="hr">
+            <i class="fas fa-users"></i>
+            <span>HR</span>
+          </button>
+          <button class="nav-tab disabled" data-tab="org">
+            <i class="fas fa-sitemap"></i>
+            <span>Org</span>
+          </button>
+        </div>
+        
+        <div class="nav-actions">
+          <button class="nav-action" id="right-sidebar-toggle" title="Інструменти">
+            <i class="fas fa-sliders-h"></i>
+          </button>
+          <form id="logoutForm" method="post" action="/logout" style="display: inline;">
+            <button class="nav-action logout" type="submit" title="Вийти">
+              <i class="fas fa-sign-out-alt"></i>
+            </button>
+          </form>
+        </div>
+      </nav>
+
+      <!-- Tab Content -->
+      <div class="tab-content">
+        <!-- Negotiation Tab -->
+        <div id="neg" class="tab-pane active">
+          <div class="content-header">
+            <h1>
+              <i class="fas fa-handshake"></i>
+              Аналіз переговорів
+            </h1>
+            <div class="header-actions">
+              <span class="status-badge">
+                <i class="fas fa-circle"></i>
+                13.5M токенів/добу
+              </span>
             </div>
           </div>
           
-          <div class="results-section">
-            <div class="results-header">
-              <h3>Результати аналізу</h3>
-              <div class="results-actions">
-                <button id="fullscreenBtn" class="btn-icon">
-                  <i class="fas fa-expand"></i>
-                </button>
-                <button id="screenshotBtn" class="btn-icon">
-                  <i class="fas fa-camera"></i>
-                </button>
-                <button id="exportBtn" class="btn-icon">
-                  <i class="fas fa-download"></i>
-                </button>
+          <div class="content-description">
+            <p>AI аналізує переговори, виявляє маніпуляції, bias та когнітивні викривлення.</p>
+          </div>
+          
+          <div class="analysis-area">
+            <div class="input-section">
+              <h3>Текст для аналізу</h3>
+              <div id="dropzone" class="dropzone">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Перетягніть файл сюди</p>
+                <span>або натисніть для вибору</span>
+              </div>
+              
+              <div class="text-input-wrapper">
+                <textarea id="inputText" placeholder="Або вставте текст переговорів тут..."></textarea>
+                <div class="input-actions">
+                  <label class="file-input-label">
+                    <input type="file" id="file" accept=".txt,.docx" hidden />
+                    <i class="fas fa-file-upload"></i>
+                    Обрати файл
+                  </label>
+                  <button id="analyzeBtn" class="btn-primary">
+                    <i class="fas fa-play"></i>
+                    Аналізувати
+                  </button>
+                </div>
               </div>
             </div>
             
-            <div id="stream" class="output-area"></div>
-            
-            <div id="badJson" class="alert alert-warning" style="display:none;">
-              <i class="fas fa-exclamation-triangle"></i>
-              Вихід містить невалідний JSON
-            </div>
-            
-            <div id="annotated" class="annotated-section" style="display:none;">
-              <h4>Підсвічений текст</h4>
-              <div class="legend">
-                <span class="legend-item bias">Bias</span>
-                <span class="legend-item manip">Маніпуляції</span>
-                <span class="legend-item fallacy">Софізми</span>
-                <span class="legend-item cog">Когнітивні</span>
+            <div class="results-section">
+              <div class="results-header">
+                <h3>Результати аналізу</h3>
+                <div class="results-actions">
+                  <button id="fullscreenBtn" class="btn-icon">
+                    <i class="fas fa-expand"></i>
+                  </button>
+                  <button id="screenshotBtn" class="btn-icon">
+                    <i class="fas fa-camera"></i>
+                  </button>
+                  <button id="exportBtn" class="btn-icon">
+                    <i class="fas fa-download"></i>
+                  </button>
+                </div>
               </div>
-              <div id="highlighted" class="highlighted-text"></div>
+              
+              <div id="stream" class="output-area"></div>
+              
+              <div id="badJson" class="alert alert-warning" style="display:none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                Вихід містить невалідний JSON
+              </div>
+              
+              <div id="annotated" class="annotated-section" style="display:none;">
+                <h4>Підсвічений текст</h4>
+                <div class="legend">
+                  <span class="legend-item bias">Bias</span>
+                  <span class="legend-item manip">Маніпуляції</span>
+                  <span class="legend-item fallacy">Софізми</span>
+                  <span class="legend-item cog">Когнітивні</span>
+                </div>
+                <div id="highlighted" class="highlighted-text"></div>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <!-- Salary Analysis Tab -->
+        <div id="salary" class="tab-pane">
+          <div class="content-header">
+            <h1>
+              <i class="fas fa-chart-line"></i>
+              Аналіз зарплатної ефективності
+            </h1>
+            <div class="header-actions">
+              <span class="status-badge">
+                <i class="fas fa-circle"></i>
+                400K токенів/добу
+              </span>
+            </div>
+          </div>
+
+          <div class="analysis-type-tabs">
+            <button class="type-tab active" id="text-analysis-btn" onclick="switchAnalysisType('text')">
+              <i class="fas fa-file-alt"></i>
+              Текстовий опис
+            </button>
+            <button class="type-tab" id="form-analysis-btn" onclick="switchAnalysisType('form')">
+              <i class="fas fa-user"></i>
+              Картка працівника
+            </button>
+            <button class="type-tab" id="json-analysis-btn" onclick="switchAnalysisType('json')">
+              <i class="fas fa-code"></i>
+              JSON аналіз
+            </button>
+          </div>
+
+          <!-- Text Analysis -->
+          <div class="analysis-section" id="text-analysis">
+            <div class="input-card">
+              <h3>Опис команди</h3>
+              <textarea id="salary-text" placeholder="Опишіть структуру команди, посади, зарплати..." rows="8"></textarea>
+              <button class="btn-primary full-width" onclick="analyzeSalaryText()">
+                <i class="fas fa-chart-line"></i>
+                Проаналізувати
+              </button>
+            </div>
+          </div>
+
+          <!-- Employee Form -->
+          <div class="analysis-section" id="form-analysis" style="display:none;">
+            <div class="employee-form-card">
+              <h3>Профіль працівника</h3>
+              <div class="form-grid">
+                <div class="form-field">
+                  <label>Ім'я працівника *</label>
+                  <input type="text" id="emp-name" placeholder="Іван Петренко">
+                </div>
+                <div class="form-field">
+                  <label>Посада *</label>
+                  <input type="text" id="emp-position" placeholder="Senior Developer">
+                </div>
+                <div class="form-field">
+                  <label>Зарплата (грн/міс) *</label>
+                  <input type="number" id="emp-salary" placeholder="45000">
+                </div>
+                <div class="form-field">
+                  <label>Досвід (років)</label>
+                  <input type="number" id="emp-experience" placeholder="3.5" step="0.5">
+                </div>
+                <div class="form-field">
+                  <label>Департамент</label>
+                  <select id="emp-department">
+                    <option value="">Оберіть...</option>
+                    <option value="IT">IT</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Sales">Sales</option>
+                    <option value="HR">HR</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label>Локація</label>
+                  <select id="emp-location">
+                    <option value="">Оберіть...</option>
+                    <option value="Київ">Київ</option>
+                    <option value="Львів">Львів</option>
+                    <option value="Remote">Віддалено</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div class="form-field full-width">
+                <label>Навички</label>
+                <textarea id="emp-skills" placeholder="React, TypeScript, Node.js..." rows="2"></textarea>
+              </div>
+              
+              <div class="form-field full-width">
+                <label>Основні завдання та їх складність</label>
+                <textarea id="emp-tasks" placeholder="Розробка нових функцій (80% часу, висока складність)&#10;Код-рев'ю (15% часу, середня складність)&#10;Документація (5% часу, низька складність)" rows="4"></textarea>
+              </div>
+              
+              <div class="form-field full-width">
+                <label>Рівень компетенцій (1-10)</label>
+                <div class="competency-input">
+                  <div class="slider-container">
+                    <input type="range" id="emp-competency" min="1" max="10" value="7" oninput="updateCompetencyValue(this.value)">
+                    <span class="slider-value" id="competency-value">7</span>
+                  </div>
+                  <div class="competency-labels">
+                    <span>Junior</span>
+                    <span>Middle</span>
+                    <span>Senior</span>
+                    <span>Expert</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="form-field full-width">
+                <label>Складність поточних завдань (1-10)</label>
+                <div class="slider-container">
+                  <input type="range" id="emp-task-complexity" min="1" max="10" value="7" oninput="updateTaskComplexityValue(this.value)">
+                  <span class="slider-value" id="task-complexity-value">7</span>
+                </div>
+              </div>
+              
+              <div class="form-field full-width">
+                <label>Продуктивність (1-10)</label>
+                <div class="slider-container">
+                  <input type="range" id="emp-performance" min="1" max="10" value="7" oninput="updatePerformanceValue(this.value)">
+                  <span class="slider-value" id="performance-value">7</span>
+                </div>
+              </div>
+              
+              <button class="btn-primary full-width" onclick="analyzeEmployee()">
+                <i class="fas fa-user-check"></i>
+                Проаналізувати працівника
+              </button>
+            </div>
+          </div>
+
+          <!-- JSON Analysis -->
+          <div class="analysis-section" id="json-analysis" style="display:none;">
+            <div class="input-card">
+              <h3>JSON структура</h3>
+              <textarea id="salaryJson" rows="12" placeholder='{"employees": [...]}'></textarea>
+              <button id="salaryBtn" class="btn-primary">
+                <i class="fas fa-chart-pie"></i>
+                Проаналізувати JSON
+              </button>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <div id="salary-result" class="results-card" style="display:none;">
+            <div id="salary-analysis-content"></div>
+          </div>
+          
+          <div id="json-results" class="chart-grid" style="display:none;">
+            <div class="chart-card">
+              <h3>Неефективність</h3>
+              <canvas id="gauge"></canvas>
+            </div>
+            <div class="chart-card">
+              <h3>По працівникам</h3>
+              <canvas id="ineffChart"></canvas>
+            </div>
+            <div id="salaryOut" class="output-area" style="margin-top: 20px;"></div>
+          </div>
+        </div>
+
+        <!-- RACI Tab (disabled) -->
+        <div id="raci" class="tab-pane">
+          <div class="content-header">
+            <h1>RACI Matrix</h1>
+          </div>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Ця функція доступна у повній версії
+          </div>
+        </div>
+
+        <!-- HR Tab (disabled) -->
+        <div id="hr" class="tab-pane">
+          <div class="content-header">
+            <h1>HR Analytics</h1>
+          </div>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Ця функція доступна у повній версії
+          </div>
+        </div>
+
+        <!-- Org Tab (disabled) -->
+        <div id="org" class="tab-pane">
+          <div class="content-header">
+            <h1>Org Structure</h1>
+          </div>
+          <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i>
+            Ця функція доступна у повній версії
           </div>
         </div>
       </div>
+    </main>
 
-      <!-- Salary Analysis Tab -->
-      <div id="salary" class="tab-pane">
-        <div class="content-header">
-          <h1>
-            <i class="fas fa-chart-line"></i>
-            Аналіз зарплатної ефективності
-          </h1>
-          <div class="header-actions">
-            <span class="status-badge">
-              <i class="fas fa-circle"></i>
-              Ліміт: 400K токенів/добу
-            </span>
-          </div>
-        </div>
-
-        <div class="analysis-type-tabs">
-          <button class="type-tab active" id="text-analysis-btn" onclick="switchAnalysisType('text')">
-            <i class="fas fa-file-alt"></i>
-            Текстовий опис
+    <!-- Right Sidebar - Tools -->
+    <aside class="sidebar sidebar-right" id="sidebar-right">
+      <div class="sidebar-header">
+        <h3>🛠 Інструменти</h3>
+        <button class="sidebar-close" onclick="closeSidebar('right')">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <div class="sidebar-content">
+        <div class="tool-section">
+          <h4>Швидкі дії</h4>
+          <button class="tool-btn" onclick="exportCurrentAnalysis()">
+            <i class="fas fa-file-export"></i>
+            Експорт звіту
           </button>
-          <button class="type-tab" id="form-analysis-btn" onclick="switchAnalysisType('form')">
-            <i class="fas fa-user"></i>
-            Картка працівника
+          <button class="tool-btn" onclick="showAnalysisHistory()">
+            <i class="fas fa-history"></i>
+            Історія аналізів
           </button>
-          <button class="type-tab" id="json-analysis-btn" onclick="switchAnalysisType('json')">
-            <i class="fas fa-code"></i>
-            JSON аналіз
+          <button class="tool-btn" onclick="clearAllData()">
+            <i class="fas fa-broom"></i>
+            Очистити дані
           </button>
-        </div>
-
-        <!-- Text Analysis -->
-        <div class="analysis-section" id="text-analysis">
-          <div class="input-card">
-            <h3>Опис команди</h3>
-            <textarea id="salary-text" placeholder="Опишіть структуру команди..." rows="8"></textarea>
-            <button class="btn-primary full-width" onclick="analyzeSalaryText()">
-              <i class="fas fa-chart-line"></i>
-              Проаналізувати
-            </button>
-          </div>
-        </div>
-
-        <!-- Employee Form -->
-        <div class="analysis-section" id="form-analysis" style="display:none;">
-          <div class="employee-form-card">
-            <h3>Профіль працівника</h3>
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Ім'я працівника *</label>
-                <input type="text" id="emp-name" placeholder="Іван Петренко">
-              </div>
-              <div class="form-field">
-                <label>Посада *</label>
-                <input type="text" id="emp-position" placeholder="Senior Developer">
-              </div>
-              <div class="form-field">
-                <label>Зарплата (грн/міс) *</label>
-                <input type="number" id="emp-salary" placeholder="45000">
-              </div>
-              <div class="form-field">
-                <label>Досвід (років)</label>
-                <input type="number" id="emp-experience" placeholder="3.5" step="0.5">
-              </div>
-              <div class="form-field">
-                <label>Департамент</label>
-                <select id="emp-department">
-                  <option value="">Оберіть...</option>
-                  <option value="IT">IT</option>
-                  <option value="Marketing">Marketing</option>
-                  <option value="Sales">Sales</option>
-                  <option value="HR">HR</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label>Локація</label>
-                <select id="emp-location">
-                  <option value="">Оберіть...</option>
-                  <option value="Київ">Київ</option>
-                  <option value="Львів">Львів</option>
-                  <option value="Remote">Віддалено</option>
-                </select>
-              </div>
-            </div>
-            <div class="form-field full-width">
-              <label>Навички</label>
-              <textarea id="emp-skills" placeholder="React, TypeScript..." rows="2"></textarea>
-            </div>
-            <div class="form-field full-width">
-              <label>Основні завдання та їх складність</label>
-              <textarea id="emp-tasks" placeholder="Розробка нових функцій (80% часу, висока складність)&#10;Код-рев'ю (15% часу, середня складність)&#10;Документація (5% часу, низька складність)" rows="4"></textarea>
-            </div>
-            <div class="form-field full-width">
-              <label>Рівень компетенцій (1-10)</label>
-              <div class="competency-input">
-                <div class="slider-container">
-                  <input type="range" id="emp-competency" min="1" max="10" value="7" oninput="updateCompetencyValue(this.value)">
-                  <span class="slider-value" id="competency-value">7</span>
-                </div>
-                <div class="competency-labels">
-                  <span>Junior</span>
-                  <span>Middle</span>
-                  <span>Senior</span>
-                  <span>Expert</span>
-                </div>
-              </div>
-            </div>
-            <div class="form-field full-width">
-              <label>Складність поточних завдань (1-10)</label>
-              <div class="slider-container">
-                <input type="range" id="emp-task-complexity" min="1" max="10" value="7" oninput="updateTaskComplexityValue(this.value)">
-                <span class="slider-value" id="task-complexity-value">7</span>
-              </div>
-            </div>
-            <div class="form-field full-width">
-              <label>Продуктивність</label>
-              <div class="slider-container">
-                <input type="range" id="emp-performance" min="1" max="10" value="7" oninput="updatePerformanceValue(this.value)">
-                <span class="slider-value" id="performance-value">7</span>
-              </div>
-            </div>
-            <button class="btn-primary full-width" onclick="analyzeEmployee()">
-              <i class="fas fa-user-check"></i>
-              Проаналізувати працівника
-            </button>
-          </div>
-        </div>
-
-        <!-- JSON Analysis -->
-        <div class="analysis-section" id="json-analysis" style="display:none;">
-          <div class="input-card">
-            <h3>JSON структура</h3>
-            <textarea id="salaryJson" rows="12" placeholder='{"employees": [...]}'></textarea>
-            <button id="salaryBtn" class="btn-primary">
-              <i class="fas fa-chart-pie"></i>
-              Проаналізувати JSON
-            </button>
-          </div>
-        </div>
-
-        <!-- Results -->
-        <div id="salary-result" class="results-card" style="display:none;">
-          <div id="salary-analysis-content"></div>
         </div>
         
-        <div id="json-results" class="chart-grid" style="display:none;">
-          <div class="chart-card">
-            <canvas id="gauge"></canvas>
+        <div class="tool-section">
+          <h4>Історія аналізів</h4>
+          <div id="analysis-history" class="history-list"></div>
+        </div>
+        
+        <div class="tool-section">
+          <h4>Статистика</h4>
+          <div class="stat-item">
+            <span class="stat-label">Аналізів сьогодні</span>
+            <span class="stat-value" id="analyses-today">0</span>
           </div>
-          <div class="chart-card">
-            <canvas id="ineffChart"></canvas>
+          <div class="stat-item">
+            <span class="stat-label">Всього клієнтів</span>
+            <span class="stat-value" id="total-clients">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Остання активність</span>
+            <span class="stat-value" id="last-activity">—</span>
           </div>
         </div>
       </div>
-    </div>
-  </main>
-
-  <!-- Right Sidebar - Tools -->
-  <aside class="sidebar sidebar-right" id="sidebar-right">
-    <div class="sidebar-header">
-      <h3>🛠 Інструменти</h3>
-      <button class="sidebar-close" onclick="closeSidebar('right')">
-        <i class="fas fa-times"></i>
-      </button>
-    </div>
-    
-    <div class="sidebar-content">
-      <div class="tool-section">
-        <h4>Швидкі дії</h4>
-        <button class="tool-btn" onclick="exportCurrentAnalysis()">
-          <i class="fas fa-file-export"></i>
-          Експорт поточного звіту
-        </button>
-        <button class="tool-btn" onclick="showAnalysisHistory()">
-          <i class="fas fa-history"></i>
-          Історія аналізів
-        </button>
-        <button class="tool-btn" onclick="clearAllData()">
-          <i class="fas fa-broom"></i>
-          Очистити дані
-        </button>
-      </div>
-      
-      <div class="tool-section">
-        <h4>Історія аналізів</h4>
-        <div id="analysis-history" class="history-list"></div>
-      </div>
-      
-      <div class="tool-section">
-        <h4>Статистика</h4>
-        <div class="stat-item">
-          <span class="stat-label">Аналізів сьогодні</span>
-          <span class="stat-value" id="analyses-today">0</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Всього клієнтів</span>
-          <span class="stat-value" id="total-clients">0</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Остання активність</span>
-          <span class="stat-value" id="last-activity">—</span>
-        </div>
-      </div>
-    </div>
-  </aside>
+    </aside>
+  </div>
 
   <!-- Onboarding Overlay -->
   <div class="onboarding-overlay" id="onboarding">
