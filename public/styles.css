@@ -145,11 +145,13 @@ body {
 
 .sidebar-header {
     padding: var(--spacing-lg);
+    padding-right: 50px; /* Space for close button */
     border-bottom: 1px solid var(--border);
     background: var(--glass-bg);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .sidebar-header h3 {
@@ -158,9 +160,14 @@ body {
     background: var(--gradient-primary);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+    margin-right: 40px; /* Prevent text overlap */
 }
 
 .sidebar-close {
+    position: absolute;
+    right: var(--spacing-md);
+    top: 50%;
+    transform: translateY(-50%);
     background: none;
     border: none;
     color: var(--muted);
@@ -168,6 +175,11 @@ body {
     cursor: pointer;
     padding: var(--spacing-xs);
     transition: color var(--transition-fast);
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sidebar-close:hover {
@@ -225,9 +237,14 @@ body {
     letter-spacing: 0.5px;
 }
 
+#saved-clients {
+    margin-bottom: var(--spacing-md);
+}
+
 .client-item {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: var(--spacing-sm);
     padding: var(--spacing-sm) var(--spacing-md);
     margin-bottom: var(--spacing-xs);
@@ -245,8 +262,63 @@ body {
     color: white;
 }
 
+.client-item-info {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
 .client-item i {
     font-size: var(--font-size-sm);
+}
+
+.client-item-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.client-item-actions button {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 4px;
+    transition: color var(--transition-fast);
+}
+
+.client-item-actions button:hover {
+    color: var(--danger);
+}
+
+/* History List */
+.history-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.history-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.history-item-date {
+    font-size: var(--font-size-xs);
+    color: var(--muted);
+    margin-bottom: 4px;
+}
+
+.history-item-client {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
 }
 
 /* Tool Section */
@@ -486,6 +558,15 @@ body {
     flex: 1;
     padding: var(--spacing-xl);
     overflow-y: auto;
+    min-height: calc(100vh - var(--top-nav-height));
+}
+
+@media (max-width: 768px) {
+    .tab-content {
+        padding: var(--spacing-lg);
+        padding-top: var(--spacing-lg);
+        min-height: calc(100vh - var(--mobile-nav-height) - 60px);
+    }
 }
 
 .tab-pane {
@@ -694,6 +775,7 @@ body {
 
 .btn-secondary:hover {
     background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-1px);
 }
 
 .btn-ghost {
@@ -705,6 +787,7 @@ body {
 .btn-ghost:hover {
     color: var(--text);
     background: rgba(255, 255, 255, 0.04);
+    border-color: var(--border);
 }
 
 .btn-icon {
@@ -1063,18 +1146,44 @@ mark.cog { background: rgba(168, 85, 247, 0.35); }
     
     .top-nav {
         padding: 0 var(--spacing-md);
+        height: auto;
+        min-height: var(--mobile-nav-height);
+    }
+    
+    .nav-brand {
+        margin-left: 60px;
+        padding: var(--spacing-sm) 0;
     }
     
     .nav-tabs {
-        display: none;
+        width: 100%;
+        order: 3;
+        padding: var(--spacing-sm) 0;
+        border-top: 1px solid var(--border);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    .nav-tab {
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+    
+    .nav-actions {
+        margin-left: auto;
     }
     
     .nav-actions .nav-action span:not(.notification-badge) {
         display: none;
     }
     
+    .top-nav {
+        flex-wrap: wrap;
+    }
+    
     .tab-content {
         padding: var(--spacing-lg);
+        padding-top: calc(var(--mobile-nav-height) + var(--spacing-lg));
     }
     
     .form-grid {

@@ -45,18 +45,73 @@ function updatePerformanceValue(value) {
   if (!valueElement) return;
   
   valueElement.textContent = value;
-  valueElement.className = 'slider-value';
+  updateSliderColor(valueElement, value);
+}
+
+// Update competency value display
+function updateCompetencyValue(value) {
+  const valueElement = document.getElementById('competency-value');
+  if (!valueElement) return;
+  
+  valueElement.textContent = value;
+  updateSliderColor(valueElement, value);
+}
+
+// Update task complexity value display
+function updateTaskComplexityValue(value) {
+  const valueElement = document.getElementById('task-complexity-value');
+  if (!valueElement) return;
+  
+  valueElement.textContent = value;
+  updateSliderColor(valueElement, value);
+}
+
+// Helper function to update slider color
+function updateSliderColor(element, value) {
+  element.className = 'slider-value';
   
   if (value <= 3) {
-    valueElement.style.background = 'rgba(255, 0, 128, 0.2)';
-    valueElement.style.color = 'var(--neon-pink)';
+    element.style.background = 'rgba(255, 0, 128, 0.2)';
+    element.style.color = 'var(--neon-pink)';
   } else if (value <= 6) {
-    valueElement.style.background = 'rgba(255, 234, 0, 0.2)';
-    valueElement.style.color = 'var(--neon-yellow)';
+    element.style.background = 'rgba(255, 234, 0, 0.2)';
+    element.style.color = 'var(--neon-yellow)';
   } else {
-    valueElement.style.background = 'rgba(0, 255, 136, 0.2)';
-    valueElement.style.color = 'var(--neon-green)';
+    element.style.background = 'rgba(0, 255, 136, 0.2)';
+    element.style.color = 'var(--neon-green)';
   }
+}
+
+// Calculate competency-task alignment
+function calculateCompetencyAlignment(competency, taskComplexity) {
+  const gap = competency - taskComplexity;
+  let status = '';
+  let efficiency = 100;
+  let financialLoss = 0;
+  
+  if (gap > 3) {
+    // Overqualified
+    status = 'Перекваліфікований';
+    efficiency = 100 - (gap * 10);
+    financialLoss = gap * 5; // 5% loss per level of overqualification
+  } else if (gap < -2) {
+    // Underqualified
+    status = 'Недостатня кваліфікація';
+    efficiency = 100 + (gap * 15);
+    financialLoss = Math.abs(gap) * 8; // 8% loss per level of underqualification
+  } else if (gap >= -2 && gap <= 3) {
+    // Optimal range
+    status = 'Оптимальна відповідність';
+    efficiency = 100 - Math.abs(gap) * 2;
+    financialLoss = Math.abs(gap) * 2;
+  }
+  
+  return {
+    gap,
+    status,
+    efficiency: Math.max(0, Math.min(100, efficiency)),
+    financialLoss: Math.min(50, financialLoss)
+  };
 }
 
 // Analyze employee
@@ -70,7 +125,10 @@ async function analyzeEmployee() {
     education: document.getElementById('emp-education')?.value.trim() || null,
     department: document.getElementById('emp-department')?.value || null,
     performance: parseInt(document.getElementById('emp-performance')?.value),
-    location: document.getElementById('emp-location')?.value || null
+    location: document.getElementById('emp-location')?.value || null,
+    tasks: document.getElementById('emp-tasks')?.value.trim() || null,
+    competency: parseInt(document.getElementById('emp-competency')?.value),
+    taskComplexity: parseInt(document.getElementById('emp-task-complexity')?.value)
   };
 
   // Validation
@@ -83,30 +141,116 @@ async function analyzeEmployee() {
     showSalaryError('Зарплата має бути від 1000 до 1000000 грн');
     return;
   }
+  
+  // Calculate competency alignment
+  const alignment = calculateCompetencyAlignment(employeeData.competency, employeeData.taskComplexity);
+  const hourlyRate = employeeData.salary / 160; // Assuming 160 hours per month
+  const monthlyLoss = (employeeData.salary * alignment.financialLoss) / 100;
 
   try {
-    showSalaryLoading('Аналізую профіль працівника...');
+    showSalaryLoading('Аналізую профіль працівника та компетенційну відповідність...');
+    
+    // Prepare enhanced prompt for API
+    const enhancedPrompt = {
+      ...employeeData,
+      competencyAnalysis: {
+        competencyLevel: employeeData.competency,
+        taskComplexity: employeeData.taskComplexity,
+        alignment: alignment,
+        hourlyRate: hourlyRate,
+        monthlyInefficiencyCost: monthlyLoss,
+        prompt: `Проаналізуй відповідність компетенцій працівника до складності завдань:
+          - Рівень компетенцій: ${employeeData.competency}/10
+          - Складність завдань: ${employeeData.taskComplexity}/10
+          - Опис завдань: ${employeeData.tasks || 'Не вказано'}
+          - Погодинна ставка: ${hourlyRate.toFixed(0)} грн/год
+          
+          Визнач:
+          1. % часу на завдання вище компетенцій (потенційні помилки, затримки)
+          2. % часу на завдання нижче компетенцій (перевитрата коштів)
+          3. % оптимально відповідних завдань
+          4. Фінансові втрати від невідповідності (грн/міс)
+          5. Рекомендації щодо перерозподілу завдань або зміни позиції`
+      }
+    };
     
     const response = await fetch('/api/salary-employee', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(employeeData)
+      body: JSON.stringify(enhancedPrompt)
     });
 
     const data = await response.json();
 
     if (response.ok && data.success) {
-      displayEmployeeAnalysis(data.analysis, data.employee);
-      showSalarySuccess('Аналіз працівника завершено');
+      // Add competency alignment to analysis
+      const enhancedAnalysis = {
+        ...data.analysis,
+        competency_alignment: alignment,
+        hourly_rate: hourlyRate,
+        monthly_inefficiency_cost: monthlyLoss
+      };
+      
+      displayEmployeeAnalysis(enhancedAnalysis, data.employee);
+      
+      // Save to history
+      const resultHtml = document.getElementById('salary-analysis-content').innerHTML;
+      if (window.saveToHistory) {
+        window.saveToHistory('salary', employeeData.name, resultHtml);
+      }
+      showSalarySuccess('Аналіз працівника з компетенційною оцінкою завершено');
     } else {
-      showSalaryError(data.error || 'Помилка аналізу працівника');
+      // Fallback: display with local calculations only
+      const fallbackAnalysis = createFallbackAnalysis(employeeData, alignment, hourlyRate, monthlyLoss);
+      displayEmployeeAnalysis(fallbackAnalysis, employeeData);
+      showSalarySuccess('Аналіз виконано локально');
     }
   } catch (error) {
     console.error('Employee analysis error:', error);
-    showSalaryError('Помилка з\'єднання при аналізі працівника');
+    // Use fallback analysis
+    const fallbackAnalysis = createFallbackAnalysis(employeeData, alignment, hourlyRate, monthlyLoss);
+    displayEmployeeAnalysis(fallbackAnalysis, employeeData);
+    showSalarySuccess('Аналіз виконано офлайн');
   } finally {
     hideSalaryLoading();
   }
+}
+
+// Create fallback analysis when API is unavailable
+function createFallbackAnalysis(employeeData, alignment, hourlyRate, monthlyLoss) {
+  return {
+    employee_analysis: {
+      salary_fairness: Math.round(7 - Math.abs(alignment.gap) * 0.5),
+      market_position: alignment.status,
+      performance_ratio: employeeData.performance,
+      growth_potential: alignment.gap > 2 ? 'Високий' : alignment.gap < -2 ? 'Потребує навчання' : 'Стабільний'
+    },
+    risk_assessment: {
+      flight_probability: alignment.gap > 3 ? 8 : alignment.gap < -2 ? 3 : 5,
+      retention_risk: alignment.gap > 3 ? 'Високий' : 'Середній'
+    },
+    market_data: {
+      position_range_min: employeeData.salary * 0.8,
+      market_median: employeeData.salary,
+      position_range_max: employeeData.salary * 1.3
+    },
+    competency_alignment: alignment,
+    hourly_rate: hourlyRate,
+    monthly_inefficiency_cost: monthlyLoss,
+    recommendations: {
+      salary_adjustment: alignment.gap > 3 ? 'Розглянути підвищення або складніші завдання' : 
+                         alignment.gap < -2 ? 'Необхідне навчання або спрощення завдань' : 
+                         'Зарплата відповідає завданням',
+      career_development: 'Збалансувати складність завдань з рівнем компетенцій',
+      skills_improvement: employeeData.skills || 'Розвивати профільні навички'
+    },
+    action_plan: [
+      alignment.gap > 3 ? 'Призначити більш складні проекти' : 'Оптимізувати розподіл завдань',
+      'Провести оцінку компетенцій через 3 місяці',
+      alignment.gap < -2 ? 'Організувати менторство або навчання' : 'Підтримувати поточний баланс',
+      `Оптимізувати витрати: потенційна економія ${monthlyLoss.toFixed(0)} грн/міс`
+    ]
+  };
 }
 
 // Analyze salary text
@@ -131,6 +275,11 @@ async function analyzeSalaryText() {
 
     if (response.ok && data.success) {
       displayTextAnalysis(data.analysis);
+      // Save to history
+      const resultHtml = document.getElementById('salary-analysis-content').innerHTML;
+      if (window.saveToHistory) {
+        window.saveToHistory('salary', 'Текстовий аналіз команди', resultHtml);
+      }
       showSalarySuccess('Аналіз команди завершено');
     } else {
       showSalaryError(data.error || 'Помилка аналізу тексту');
@@ -194,6 +343,11 @@ document.getElementById('salaryBtn')?.addEventListener('click', async () => {
         per.map(p => p.inefficiency_percent || 0)
       );
       
+      // Save to history
+      if (window.saveToHistory) {
+        window.saveToHistory('salary', 'JSON аналіз', data.raw);
+      }
+      
       showSalarySuccess('JSON аналіз завершено');
     } catch (e) {
       console.error('Chart parse error:', e);
@@ -213,6 +367,12 @@ function displayEmployeeAnalysis(analysis, employee) {
   
   if (!resultDiv || !resultContainer) return;
   
+  // Calculate visual indicators for competency alignment
+  const alignment = analysis.competency_alignment || { gap: 0, status: 'Невідомо', efficiency: 100, financialLoss: 0 };
+  const alignmentColor = alignment.gap > 3 ? 'var(--neon-yellow)' : 
+                         alignment.gap < -2 ? 'var(--neon-pink)' : 
+                         'var(--neon-green)';
+  
   const html = `
     <div class="employee-result-card">
       <div class="result-header-section">
@@ -221,9 +381,71 @@ function displayEmployeeAnalysis(analysis, employee) {
           <div class="employee-badges">
             <span class="info-badge">${employee.position}</span>
             <span class="info-badge salary">${employee.salary.toLocaleString('uk-UA')} грн/міс</span>
+            ${analysis.hourly_rate ? `<span class="info-badge">${analysis.hourly_rate.toFixed(0)} грн/год</span>` : ''}
           </div>
         </div>
       </div>
+
+      <!-- New Competency Alignment Section -->
+      ${alignment ? `
+      <div class="competency-alignment-section">
+        <h5><i class="fas fa-balance-scale-right"></i> Компетенційна відповідність</h5>
+        <div class="alignment-visual">
+          <div class="alignment-chart">
+            <canvas id="competency-chart" width="300" height="200"></canvas>
+          </div>
+          <div class="alignment-metrics">
+            <div class="alignment-metric">
+              <div class="metric-label">Статус відповідності</div>
+              <div class="metric-value" style="color: ${alignmentColor}">
+                ${alignment.status}
+              </div>
+            </div>
+            <div class="alignment-metric">
+              <div class="metric-label">Ефективність використання</div>
+              <div class="efficiency-bar">
+                <div class="efficiency-fill" style="width: ${alignment.efficiency}%; background: ${alignmentColor}"></div>
+                <span class="efficiency-text">${alignment.efficiency}%</span>
+              </div>
+            </div>
+            <div class="alignment-metric">
+              <div class="metric-label">Фінансові втрати</div>
+              <div class="metric-value loss">
+                ${analysis.monthly_inefficiency_cost ? `${analysis.monthly_inefficiency_cost.toFixed(0)} грн/міс` : '—'}
+                <span class="loss-percent">(${alignment.financialLoss.toFixed(1)}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="task-distribution">
+          <h6>Розподіл завдань за складністю</h6>
+          <div class="distribution-bars">
+            <div class="distribution-item">
+              <label>Занадто складні</label>
+              <div class="distribution-bar">
+                <div class="bar-fill over" style="width: ${alignment.gap < -2 ? Math.abs(alignment.gap) * 10 : 0}%"></div>
+              </div>
+              <span>${alignment.gap < -2 ? Math.abs(alignment.gap) * 10 : 0}%</span>
+            </div>
+            <div class="distribution-item">
+              <label>Оптимальні</label>
+              <div class="distribution-bar">
+                <div class="bar-fill optimal" style="width: ${100 - Math.abs(alignment.gap) * 10}%"></div>
+              </div>
+              <span>${100 - Math.abs(alignment.gap) * 10}%</span>
+            </div>
+            <div class="distribution-item">
+              <label>Занадто прості</label>
+              <div class="distribution-bar">
+                <div class="bar-fill under" style="width: ${alignment.gap > 3 ? alignment.gap * 10 : 0}%"></div>
+              </div>
+              <span>${alignment.gap > 3 ? alignment.gap * 10 : 0}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      ` : ''}
 
       <div class="metrics-grid">
         <div class="metric-card">
@@ -316,10 +538,84 @@ function displayEmployeeAnalysis(analysis, employee) {
   resultDiv.innerHTML = html;
   resultContainer.style.display = 'block';
   
+  // Draw competency chart if canvas exists
+  if (alignment && document.getElementById('competency-chart')) {
+    setTimeout(() => drawCompetencyChart(alignment), 100);
+  }
+  
   // Smooth scroll to results
   setTimeout(() => {
     resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
+}
+
+// Draw competency alignment chart
+function drawCompetencyChart(alignment) {
+  const canvas = document.getElementById('competency-chart');
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext('2d');
+  const width = canvas.width;
+  const height = canvas.height;
+  
+  // Clear canvas
+  ctx.clearRect(0, 0, width, height);
+  
+  // Draw scale
+  const centerY = height / 2;
+  const barHeight = 40;
+  const barWidth = width - 60;
+  const startX = 30;
+  
+  // Background gradient
+  const gradient = ctx.createLinearGradient(startX, 0, startX + barWidth, 0);
+  gradient.addColorStop(0, 'rgba(255, 0, 128, 0.3)');
+  gradient.addColorStop(0.3, 'rgba(255, 234, 0, 0.3)');
+  gradient.addColorStop(0.5, 'rgba(0, 255, 136, 0.3)');
+  gradient.addColorStop(0.7, 'rgba(255, 234, 0, 0.3)');
+  gradient.addColorStop(1, 'rgba(255, 0, 128, 0.3)');
+  
+  // Draw background bar
+  ctx.fillStyle = gradient;
+  ctx.fillRect(startX, centerY - barHeight/2, barWidth, barHeight);
+  
+  // Draw borders
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+  ctx.strokeRect(startX, centerY - barHeight/2, barWidth, barHeight);
+  
+  // Draw scale labels
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+  ctx.font = '11px Inter';
+  ctx.textAlign = 'center';
+  
+  // Labels
+  ctx.fillText('Недокваліфікований', startX + barWidth * 0.15, centerY + barHeight/2 + 20);
+  ctx.fillText('Оптимально', startX + barWidth * 0.5, centerY + barHeight/2 + 20);
+  ctx.fillText('Перекваліфікований', startX + barWidth * 0.85, centerY + barHeight/2 + 20);
+  
+  // Draw position indicator
+  const gap = alignment.gap || 0;
+  const normalizedGap = Math.max(-5, Math.min(5, gap));
+  const indicatorX = startX + barWidth * (0.5 + normalizedGap * 0.1);
+  
+  // Indicator line
+  ctx.strokeStyle = gap > 3 ? '#ffea00' : gap < -2 ? '#ff0080' : '#00ff88';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(indicatorX, centerY - barHeight/2 - 10);
+  ctx.lineTo(indicatorX, centerY + barHeight/2 + 10);
+  ctx.stroke();
+  
+  // Indicator circle
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.beginPath();
+  ctx.arc(indicatorX, centerY, 8, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Gap value
+  ctx.fillStyle = 'white';
+  ctx.font = 'bold 14px Inter';
+  ctx.fillText(gap > 0 ? `+${gap}` : `${gap}`, indicatorX, centerY - barHeight/2 - 15);
 }
 
 // Display text analysis results
@@ -1071,6 +1367,186 @@ function addResultStyles() {
       color: var(--text);
     }
     
+    /* Competency Alignment Styles */
+    .competency-alignment-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .competency-alignment-section h5 {
+      font-size: 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text);
+    }
+    
+    .alignment-visual {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+    
+    .alignment-chart {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .alignment-metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .alignment-metric {
+      padding: 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+    }
+    
+    .alignment-metric .metric-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .alignment-metric .metric-value {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .alignment-metric .metric-value.loss {
+      color: var(--neon-pink);
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    
+    .loss-percent {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    
+    .efficiency-bar {
+      position: relative;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    
+    .efficiency-fill {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      border-radius: 12px;
+      transition: width 0.6s ease-out;
+      background: var(--gradient-primary);
+    }
+    
+    .efficiency-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 12px;
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+    
+    .task-distribution {
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .task-distribution h6 {
+      font-size: 14px;
+      margin-bottom: 16px;
+      color: var(--text);
+    }
+    
+    .distribution-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .distribution-item {
+      display: grid;
+      grid-template-columns: 120px 1fr 50px;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .distribution-item label {
+      font-size: 12px;
+      color: var(--muted);
+    }
+    
+    .distribution-bar {
+      height: 20px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .bar-fill {
+      height: 100%;
+      border-radius: 10px;
+      transition: width 0.6s ease-out;
+    }
+    
+    .bar-fill.over {
+      background: linear-gradient(90deg, var(--neon-pink), rgba(255, 0, 128, 0.5));
+    }
+    
+    .bar-fill.optimal {
+      background: linear-gradient(90deg, var(--neon-green), rgba(0, 255, 136, 0.5));
+    }
+    
+    .bar-fill.under {
+      background: linear-gradient(90deg, var(--neon-yellow), rgba(255, 234, 0, 0.5));
+    }
+    
+    .distribution-item span {
+      font-size: 12px;
+      font-weight: 600;
+      text-align: right;
+    }
+    
+    /* Competency input styles */
+    .competency-input {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    
+    .competency-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 0 4px;
+    }
+    
+    /* Canvas styles */
+    #competency-chart {
+      max-width: 100%;
+      height: auto;
+    }
+    
+    
     /* Mobile Adjustments */
     @media (max-width: 768px) {
       .metrics-grid,
@@ -1099,6 +1575,22 @@ function addResultStyles() {
       .efficiency-value .value {
         font-size: 24px;
       }
+      
+      .alignment-visual {
+        grid-template-columns: 1fr;
+      }
+      
+      .distribution-item {
+        grid-template-columns: 100px 1fr 40px;
+      }
+      
+      .distribution-item label {
+        font-size: 11px;
+      }
+      
+      .alignment-chart {
+        margin-bottom: 20px;
+      }
     }
     
     @keyframes fadeInUp {
@@ -1119,6 +1611,8 @@ function addResultStyles() {
 // Export functions for global use
 window.switchAnalysisType = switchAnalysisType;
 window.updatePerformanceValue = updatePerformanceValue;
+window.updateCompetencyValue = updateCompetencyValue;
+window.updateTaskComplexityValue = updateTaskComplexityValue;
 window.analyzeEmployee = analyzeEmployee;
 window.analyzeSalaryText = analyzeSalaryText;
 window.clearSalaryResult = clearSalaryResult;

@@ -16,7 +16,7 @@
 </head>
 <body>
   <!-- Mobile Menu Toggle -->
-  <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+  <button class="mobile-menu-toggle" id="mobile-menu-toggle" title="Меню">
     <i class="fas fa-bars"></i>
   </button>
 
@@ -68,19 +68,14 @@
       </div>
       
       <div class="client-list">
-        <h4>Останні клієнти</h4>
-        <div class="client-item active">
-          <i class="fas fa-building"></i>
-          <span>ТОВ Приклад</span>
-        </div>
-        <div class="client-item">
-          <i class="fas fa-building"></i>
-          <span>TechCorp UA</span>
-        </div>
-        <div class="client-item">
-          <i class="fas fa-building"></i>
-          <span>Digital Solutions</span>
-        </div>
+        <h4>Збережені клієнти</h4>
+        <div id="saved-clients"></div>
+        <button class="btn-secondary full-width" onclick="saveCurrentClient()">
+          <i class="fas fa-save"></i> Зберегти поточного
+        </button>
+        <button class="btn-ghost full-width" onclick="clearClients()">
+          <i class="fas fa-trash"></i> Очистити всіх
+        </button>
       </div>
     </div>
   </aside>
@@ -309,6 +304,32 @@
               <textarea id="emp-skills" placeholder="React, TypeScript..." rows="2"></textarea>
             </div>
             <div class="form-field full-width">
+              <label>Основні завдання та їх складність</label>
+              <textarea id="emp-tasks" placeholder="Розробка нових функцій (80% часу, висока складність)&#10;Код-рев'ю (15% часу, середня складність)&#10;Документація (5% часу, низька складність)" rows="4"></textarea>
+            </div>
+            <div class="form-field full-width">
+              <label>Рівень компетенцій (1-10)</label>
+              <div class="competency-input">
+                <div class="slider-container">
+                  <input type="range" id="emp-competency" min="1" max="10" value="7" oninput="updateCompetencyValue(this.value)">
+                  <span class="slider-value" id="competency-value">7</span>
+                </div>
+                <div class="competency-labels">
+                  <span>Junior</span>
+                  <span>Middle</span>
+                  <span>Senior</span>
+                  <span>Expert</span>
+                </div>
+              </div>
+            </div>
+            <div class="form-field full-width">
+              <label>Складність поточних завдань (1-10)</label>
+              <div class="slider-container">
+                <input type="range" id="emp-task-complexity" min="1" max="10" value="7" oninput="updateTaskComplexityValue(this.value)">
+                <span class="slider-value" id="task-complexity-value">7</span>
+              </div>
+            </div>
+            <div class="form-field full-width">
               <label>Продуктивність</label>
               <div class="slider-container">
                 <input type="range" id="emp-performance" min="1" max="10" value="7" oninput="updatePerformanceValue(this.value)">
@@ -363,40 +384,38 @@
     <div class="sidebar-content">
       <div class="tool-section">
         <h4>Швидкі дії</h4>
-        <button class="tool-btn">
+        <button class="tool-btn" onclick="exportCurrentAnalysis()">
           <i class="fas fa-file-export"></i>
-          Експорт звіту
+          Експорт поточного звіту
         </button>
-        <button class="tool-btn">
+        <button class="tool-btn" onclick="showAnalysisHistory()">
           <i class="fas fa-history"></i>
           Історія аналізів
         </button>
-        <button class="tool-btn">
-          <i class="fas fa-cog"></i>
-          Налаштування
+        <button class="tool-btn" onclick="clearAllData()">
+          <i class="fas fa-broom"></i>
+          Очистити дані
         </button>
+      </div>
+      
+      <div class="tool-section">
+        <h4>Історія аналізів</h4>
+        <div id="analysis-history" class="history-list"></div>
       </div>
       
       <div class="tool-section">
         <h4>Статистика</h4>
         <div class="stat-item">
           <span class="stat-label">Аналізів сьогодні</span>
-          <span class="stat-value">12</span>
+          <span class="stat-value" id="analyses-today">0</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Токенів використано</span>
-          <span class="stat-value">245K</span>
+          <span class="stat-label">Всього клієнтів</span>
+          <span class="stat-value" id="total-clients">0</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Ефективність</span>
-          <span class="stat-value">94%</span>
-        </div>
-      </div>
-      
-      <div class="tool-section">
-        <h4>Підказки</h4>
-        <div class="tip-card">
-          <p>💡 Використовуйте Ctrl+Space для швидкого доступу до інструментів</p>
+          <span class="stat-label">Остання активність</span>
+          <span class="stat-value" id="last-activity">—</span>
         </div>
       </div>
     </div>

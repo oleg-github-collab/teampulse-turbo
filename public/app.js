@@ -7,7 +7,6 @@ const rightSidebarToggle = document.getElementById('right-sidebar-toggle');
 // Mobile menu toggle
 mobileMenuToggle?.addEventListener('click', () => {
   leftSidebar.classList.toggle('active');
-  // Update icon
   const icon = mobileMenuToggle.querySelector('i');
   if (leftSidebar.classList.contains('active')) {
     icon.className = 'fas fa-times';
@@ -66,6 +65,9 @@ navTabs.forEach(tab => {
       }
     });
     
+    // Save current tab
+    localStorage.setItem('current_tab', targetTab);
+    
     // Close mobile menu after tab selection
     if (window.innerWidth <= 1024) {
       leftSidebar.classList.remove('active');
@@ -74,73 +76,303 @@ navTabs.forEach(tab => {
   });
 });
 
-// ===== Theme Toggle =====
-const themeToggle = document.getElementById('theme-toggle');
-let darkMode = true;
-
-themeToggle?.addEventListener('click', () => {
-  darkMode = !darkMode;
-  const icon = themeToggle.querySelector('i');
-  
-  if (darkMode) {
-    document.documentElement.style.setProperty('--bg', '#0a0a0a');
-    document.documentElement.style.setProperty('--bg-secondary', '#0f0f0f');
-    icon.className = 'fas fa-moon';
-  } else {
-    document.documentElement.style.setProperty('--bg', '#1a1a1a');
-    document.documentElement.style.setProperty('--bg-secondary', '#2a2a2a');
-    icon.className = 'fas fa-sun';
+// Restore last active tab
+const lastTab = localStorage.getItem('current_tab');
+if (lastTab) {
+  const tabToActivate = document.querySelector(`.nav-tab[data-tab="${lastTab}"]`);
+  if (tabToActivate && !tabToActivate.classList.contains('disabled')) {
+    tabToActivate.click();
   }
-});
+}
 
-// ===== Profile Management =====
+// ===== Client Management =====
+let clients = JSON.parse(localStorage.getItem('clients')) || [];
+let currentClientId = localStorage.getItem('current_client_id') || null;
+
 function gatherProfile() {
   return {
+    id: Date.now().toString(),
     company: document.getElementById('company')?.value.trim() || '',
     negotiator: document.getElementById('negotiator')?.value.trim() || '',
     sector: document.getElementById('sector')?.value.trim() || '',
     goal: document.getElementById('goal')?.value.trim() || '',
     criteria: document.getElementById('criteria')?.value.trim() || '',
     constraints: document.getElementById('constraints')?.value.trim() || '',
-    notes: document.getElementById('notes')?.value.trim() || ''
+    notes: document.getElementById('notes')?.value.trim() || '',
+    createdAt: new Date().toISOString()
   };
 }
 
-// Save profile to localStorage on change
-const profileInputs = ['company', 'negotiator', 'sector', 'goal', 'criteria', 'constraints', 'notes'];
-profileInputs.forEach(id => {
-  const input = document.getElementById(id);
-  if (input) {
-    // Load saved value
-    const saved = localStorage.getItem(`profile_${id}`);
-    if (saved) input.value = saved;
-    
-    // Save on change
-    input.addEventListener('input', () => {
-      localStorage.setItem(`profile_${id}`, input.value);
-    });
-  }
-});
+function loadProfile(profile) {
+  if (!profile) return;
+  
+  document.getElementById('company').value = profile.company || '';
+  document.getElementById('negotiator').value = profile.negotiator || '';
+  document.getElementById('sector').value = profile.sector || '';
+  document.getElementById('goal').value = profile.goal || '';
+  document.getElementById('criteria').value = profile.criteria || '';
+  document.getElementById('constraints').value = profile.constraints || '';
+  document.getElementById('notes').value = profile.notes || '';
+}
 
-// ===== Client List =====
-const clientItems = document.querySelectorAll('.client-item');
-clientItems.forEach(item => {
-  item.addEventListener('click', () => {
-    clientItems.forEach(i => i.classList.remove('active'));
-    item.classList.add('active');
-    // Here you could load different client profiles
+function renderClients() {
+  const container = document.getElementById('saved-clients');
+  if (!container) return;
+  
+  if (clients.length === 0) {
+    container.innerHTML = '<p class="muted">Немає збережених клієнтів</p>';
+    return;
+  }
+  
+  container.innerHTML = clients.map((client, index) => `
+    <div class="client-item ${client.id === currentClientId ? 'active' : ''}" 
+         data-client-id="${client.id}">
+      <div class="client-item-info" onclick="loadClient('${client.id}')">
+        <i class="fas fa-building"></i>
+        <span>${client.company || 'Без назви'}</span>
+      </div>
+      <div class="client-item-actions">
+        <button onclick="deleteClient('${client.id}')" title="Видалити">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  updateStatistics();
+}
+
+window.saveCurrentClient = () => {
+  const profile = gatherProfile();
+  
+  if (!profile.company) {
+    showNotification('Введіть назву компанії для збереження', 'warning');
+    return;
+  }
+  
+  // Check if client already exists
+  const existingIndex = clients.findIndex(c => c.company === profile.company);
+  if (existingIndex >= 0) {
+    // Update existing
+    clients[existingIndex] = { ...clients[existingIndex], ...profile };
+    showNotification('Клієнт оновлено', 'success');
+  } else {
+    // Add new
+    clients.push(profile);
+    showNotification('Клієнт збережено', 'success');
+  }
+  
+  currentClientId = profile.id;
+  localStorage.setItem('clients', JSON.stringify(clients));
+  localStorage.setItem('current_client_id', currentClientId);
+  renderClients();
+};
+
+window.loadClient = (clientId) => {
+  const client = clients.find(c => c.id === clientId);
+  if (!client) return;
+  
+  loadProfile(client);
+  currentClientId = clientId;
+  localStorage.setItem('current_client_id', currentClientId);
+  renderClients();
+  showNotification(`Завантажено клієнта: ${client.company}`, 'info');
+};
+
+window.deleteClient = (clientId) => {
+  if (!confirm('Видалити цього клієнта?')) return;
+  
+  clients = clients.filter(c => c.id !== clientId);
+  localStorage.setItem('clients', JSON.stringify(clients));
+  
+  if (currentClientId === clientId) {
+    currentClientId = null;
+    localStorage.removeItem('current_client_id');
+  }
+  
+  renderClients();
+  showNotification('Клієнт видалено', 'success');
+};
+
+window.clearClients = () => {
+  if (!confirm('Видалити всіх збережених клієнтів?')) return;
+  
+  clients = [];
+  currentClientId = null;
+  localStorage.removeItem('clients');
+  localStorage.removeItem('current_client_id');
+  renderClients();
+  
+  // Clear form
+  ['company', 'negotiator', 'sector', 'goal', 'criteria', 'constraints', 'notes'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
   });
-});
+  
+  showNotification('Всі клієнти видалені', 'success');
+};
+
+// ===== Analysis History =====
+let analysisHistory = JSON.parse(localStorage.getItem('analysis_history')) || [];
+
+function saveToHistory(type, clientName, result) {
+  const historyItem = {
+    id: Date.now().toString(),
+    type,
+    clientName,
+    result,
+    timestamp: new Date().toISOString()
+  };
+  
+  analysisHistory.unshift(historyItem);
+  // Keep only last 50 items
+  analysisHistory = analysisHistory.slice(0, 50);
+  
+  localStorage.setItem('analysis_history', JSON.stringify(analysisHistory));
+  renderHistory();
+  updateStatistics();
+}
+
+function renderHistory() {
+  const container = document.getElementById('analysis-history');
+  if (!container) return;
+  
+  if (analysisHistory.length === 0) {
+    container.innerHTML = '<p class="muted">Немає історії</p>';
+    return;
+  }
+  
+  const recentHistory = analysisHistory.slice(0, 10);
+  container.innerHTML = recentHistory.map(item => `
+    <div class="history-item" onclick="loadHistoryItem('${item.id}')">
+      <div class="history-item-date">${new Date(item.timestamp).toLocaleString('uk-UA')}</div>
+      <div class="history-item-client">${item.clientName || 'Без назви'} - ${item.type}</div>
+    </div>
+  `).join('');
+}
+
+window.loadHistoryItem = (itemId) => {
+  const item = analysisHistory.find(h => h.id === itemId);
+  if (!item) return;
+  
+  // Switch to appropriate tab
+  const tabToActivate = document.querySelector(`.nav-tab[data-tab="${item.type}"]`);
+  if (tabToActivate && !tabToActivate.classList.contains('disabled')) {
+    tabToActivate.click();
+  }
+  
+  // Load result based on type
+  if (item.type === 'neg' && item.result) {
+    const streamEl = document.getElementById('stream');
+    if (streamEl) streamEl.textContent = item.result;
+    document.getElementById('annotated').style.display = 'none';
+  } else if (item.type === 'salary' && item.result) {
+    const resultDiv = document.getElementById('salary-analysis-content');
+    if (resultDiv) {
+      resultDiv.innerHTML = item.result;
+      document.getElementById('salary-result').style.display = 'block';
+    }
+  }
+  
+  showNotification('Історія завантажена', 'info');
+};
+
+window.showAnalysisHistory = () => {
+  renderHistory();
+  rightSidebar.classList.add('active');
+};
+
+window.clearAllData = () => {
+  if (!confirm('Видалити всю історію та дані? Ця дія незворотна!')) return;
+  
+  localStorage.removeItem('analysis_history');
+  localStorage.removeItem('clients');
+  localStorage.removeItem('current_client_id');
+  
+  analysisHistory = [];
+  clients = [];
+  currentClientId = null;
+  
+  renderHistory();
+  renderClients();
+  updateStatistics();
+  
+  showNotification('Всі дані очищено', 'success');
+};
+
+// ===== Export Functions =====
+window.exportCurrentAnalysis = () => {
+  const activeTab = document.querySelector('.tab-pane.active');
+  if (!activeTab) {
+    showNotification('Немає активного аналізу', 'warning');
+    return;
+  }
+  
+  let content = '';
+  let filename = '';
+  
+  if (activeTab.id === 'neg') {
+    content = document.getElementById('stream')?.textContent || '';
+    filename = `negotiation_analysis_${Date.now()}.txt`;
+  } else if (activeTab.id === 'salary') {
+    content = document.getElementById('salary-analysis-content')?.innerText || '';
+    filename = `salary_analysis_${Date.now()}.txt`;
+  }
+  
+  if (!content) {
+    showNotification('Немає даних для експорту', 'warning');
+    return;
+  }
+  
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const link = document.createElement('a');
+  link.download = filename;
+  link.href = URL.createObjectURL(blob);
+  link.click();
+  
+  showNotification('Аналіз експортовано', 'success');
+};
+
+// ===== Statistics =====
+function updateStatistics() {
+  // Analyses today
+  const today = new Date().toDateString();
+  const todayAnalyses = analysisHistory.filter(h => 
+    new Date(h.timestamp).toDateString() === today
+  ).length;
+  document.getElementById('analyses-today').textContent = todayAnalyses;
+  
+  // Total clients
+  document.getElementById('total-clients').textContent = clients.length;
+  
+  // Last activity
+  if (analysisHistory.length > 0) {
+    const lastDate = new Date(analysisHistory[0].timestamp);
+    const timeAgo = getTimeAgo(lastDate);
+    document.getElementById('last-activity').textContent = timeAgo;
+  } else {
+    document.getElementById('last-activity').textContent = '—';
+  }
+}
+
+function getTimeAgo(date) {
+  const seconds = Math.floor((new Date() - date) / 1000);
+  
+  if (seconds < 60) return 'щойно';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} хв тому`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} год тому`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} дн тому`;
+  
+  return date.toLocaleDateString('uk-UA');
+}
 
 // ===== Drag & Drop =====
 const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('file');
 
 if (dropzone && fileInput) {
-  // Click to select file
   dropzone.addEventListener('click', () => fileInput.click());
   
-  // Drag events
   dropzone.addEventListener('dragover', (e) => {
     e.preventDefault();
     dropzone.classList.add('dragover');
@@ -160,7 +392,6 @@ if (dropzone && fileInput) {
     }
   });
   
-  // File input change
   fileInput.addEventListener('change', () => {
     if (fileInput.files?.length) {
       updateDropzoneText(fileInput.files[0].name);
@@ -177,7 +408,7 @@ function updateDropzoneText(filename) {
   `;
 }
 
-// ===== Analysis Functions =====
+// ===== Negotiation Analysis =====
 const analyzeBtn = document.getElementById('analyzeBtn');
 const streamEl = document.getElementById('stream');
 const fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -202,12 +433,10 @@ analyzeBtn?.addEventListener('click', async () => {
     form.append('text', inputText);
   }
   
-  // Clear previous results
   streamEl.textContent = '';
   document.getElementById('badJson').style.display = 'none';
   document.getElementById('annotated').style.display = 'none';
   
-  // Show loading state
   analyzeBtn.disabled = true;
   analyzeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Аналізую...';
   
@@ -244,6 +473,9 @@ analyzeBtn?.addEventListener('click', async () => {
       });
     }
     
+    // Save to history
+    saveToHistory('neg', profile.company || 'Без назви', full);
+    
     // Try to parse and highlight
     try {
       const jsonStart = full.indexOf('{');
@@ -251,7 +483,6 @@ analyzeBtn?.addEventListener('click', async () => {
       const jsonText = full.slice(jsonStart, jsonEnd + 1);
       const parsed = JSON.parse(jsonText);
       
-      // Show highlights if text was provided
       if (inputText) {
         const highlights = [];
         for (const b of (parsed.biases || [])) {
@@ -317,18 +548,7 @@ screenshotBtn?.addEventListener('click', async () => {
 
 // Export
 exportBtn?.addEventListener('click', () => {
-  const content = streamEl.textContent;
-  if (!content) {
-    showNotification('Немає даних для експорту', 'warning');
-    return;
-  }
-  
-  const blob = new Blob([content], { type: 'text/plain' });
-  const link = document.createElement('a');
-  link.download = `teampulse_analysis_${Date.now()}.txt`;
-  link.href = URL.createObjectURL(blob);
-  link.click();
-  showNotification('Файл експортовано', 'success');
+  window.exportCurrentAnalysis();
 });
 
 // ===== Highlight Functions =====
@@ -373,6 +593,7 @@ function openOnboarding() {
 
 function closeOnboarding() {
   onboarding?.classList.remove('active');
+  localStorage.setItem('onboarding_completed', 'true');
 }
 
 window.skipOnboarding = closeOnboarding;
@@ -394,16 +615,13 @@ window.nextOnboardingStep = () => {
 // Show onboarding for new users
 if (!localStorage.getItem('onboarding_completed')) {
   setTimeout(openOnboarding, 800);
-  localStorage.setItem('onboarding_completed', 'true');
 }
 
 // ===== Notifications =====
 function showNotification(message, type = 'info') {
-  // Remove existing notification
   const existing = document.querySelector('.notification-toast');
   if (existing) existing.remove();
   
-  // Create new notification
   const notification = document.createElement('div');
   notification.className = `notification-toast notification-${type}`;
   
@@ -421,7 +639,6 @@ function showNotification(message, type = 'info') {
   
   document.body.appendChild(notification);
   
-  // Add styles if not present
   if (!document.getElementById('notification-styles')) {
     const style = document.createElement('style');
     style.id = 'notification-styles';
@@ -497,12 +714,13 @@ function showNotification(message, type = 'info') {
     document.head.appendChild(style);
   }
   
-  // Auto-remove after 5 seconds
   setTimeout(() => {
     notification.style.animation = 'slideInRight 0.3s ease-out reverse';
     setTimeout(() => notification.remove(), 300);
   }, 5000);
 }
+
+window.showNotification = showNotification;
 
 // ===== Keyboard Shortcuts =====
 document.addEventListener('keydown', (e) => {
@@ -510,6 +728,18 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.code === 'Space') {
     e.preventDefault();
     rightSidebar.classList.toggle('active');
+  }
+  
+  // Ctrl/Cmd + S - Save current client
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    window.saveCurrentClient();
+  }
+  
+  // Ctrl/Cmd + E - Export
+  if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+    e.preventDefault();
+    window.exportCurrentAnalysis();
   }
   
   // Esc - Close modals/sidebars
@@ -528,11 +758,9 @@ let resizeTimer;
 window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    // Close mobile menu on desktop resize
     if (window.innerWidth > 1024) {
       mobileMenuToggle.querySelector('i').className = 'fas fa-bars';
     }
-    // Close right sidebar on mobile
     if (window.innerWidth <= 768) {
       rightSidebar.classList.remove('active');
     }
@@ -544,7 +772,6 @@ document.addEventListener('gesturestart', (e) => {
   e.preventDefault();
 });
 
-// Prevent double-tap zoom
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
   const now = Date.now();
@@ -555,5 +782,16 @@ document.addEventListener('touchend', (e) => {
 }, false);
 
 // ===== Initialize =====
+renderClients();
+renderHistory();
+updateStatistics();
+
+// Load current client if exists
+if (currentClientId) {
+  const client = clients.find(c => c.id === currentClientId);
+  if (client) {
+    loadProfile(client);
+  }
+}
+
 console.log('TeamPulse Turbo initialized ⚡');
-showNotification('Ласкаво просимо до TeamPulse Turbo', 'info');
